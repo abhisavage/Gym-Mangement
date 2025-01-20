@@ -1,0 +1,22 @@
+const express = require('express');
+const sessionController = require('../controllers/sessionController');
+const trainerAuth = require('../middlewares/trainerAuth');
+const memberAuth = require('../middlewares/memberAuth');
+
+const router = express.Router();
+
+// Trainer routes
+router.post('/', trainerAuth, sessionController.createSession);
+router.put('/update/:sessionId', trainerAuth, sessionController.updateSession);
+router.delete('/delete/:sessionId', trainerAuth, sessionController.deleteSession);
+router.get('/my-sessions', trainerAuth, sessionController.getSessionsByTrainer);
+
+// Member routes
+router.get('/', memberAuth, sessionController.getAllSessions);
+router.post('/:sessionId/book', memberAuth, sessionController.bookSession);
+
+// Public routes
+router.get('/available', sessionController.getAvailableSessions);
+
+
+module.exports = router;

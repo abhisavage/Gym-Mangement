@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Member {
+  id             String       @id @default(uuid())
+  name           String
+  age            Int
+  email          String       @unique
+  password       String
+  membershipId   String?
+  planStartDate  DateTime?
+  planEndDate    DateTime?
+  payments       Payment[]
+  attendance     Attendance[]
+  registrations  Registration[]
+  usages        Usage[]
+  membership     Membership?  @relation(fields: [membershipId], references: [id])
+}
+
+model Trainer {
+  id           String    @id @default(uuid())
+  name         String
+  age          Int
+  email        String    @unique
+  password     String
+  speciality   String
+  availability Boolean   @default(true)
+  sessions     Session[]
+}
+
+model Membership {
+  id        String   @id @default(uuid())
+  planName  String
+  duration  Int      // in months
+  cost      Float
+  features  String[]
+  members   Member[]
+  payments  Payment[]
+}
+
+model Payment {
+  id           String     @id @default(uuid())
+  memberId     String
+  amount       Float
+  paymentDate  DateTime   @default(now())
+  paymentMode  String
+  planId       String
+  member       Member     @relation(fields: [memberId], references: [id])
+  membership   Membership @relation(fields: [planId], references: [id])
+}
+
+model Attendance {
+  id        String   @id @default(uuid())
+  memberId  String
+  date      DateTime @default(now())
+  inTime    DateTime
+  outTime   DateTime?
+  member    Member   @relation(fields: [memberId], references: [id])
+}
+
+model Session {
+  id           String         @id @default(uuid())
+  sessionName  String
+  trainerId    String
+  schedule     DateTime
+  capacity     Int
+  description  String?
+  trainer      Trainer        @relation(fields: [trainerId], references: [id])
+  registrations Registration[]
+}
+
+model Equipment {
+  id          String   @id @default(uuid())
+  name        String
+  category    String
+  quantity    Int
+  status      String
+  usages      Usage[]
+}
+
+model Registration {
+  id         String   @id @default(uuid())
+  memberId   String
+  sessionId  String
+  feedback   String?
+  member     Member   @relation(fields: [memberId], references: [id])
+  session    Session  @relation(fields: [sessionId], references: [id])
+
+  @@unique([memberId, sessionId])
+}
+
+model Usage {
+  id           String    @id @default(uuid())
+  memberId     String
+  equipmentId  String
+  date         DateTime  @default(now())
+  time         DateTime
+  duration     Int       // in minutes
+  member       Member    @relation(fields: [memberId], references: [id])
+  equipment    Equipment @relation(fields: [equipmentId], references: [id])
+} 
