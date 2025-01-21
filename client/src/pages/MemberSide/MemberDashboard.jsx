@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import axios from 'axios';
+import API_BASE_URL from '../../config';
 
 const DashboardContainer = styled.div`
   min-height: 100vh;
@@ -359,9 +361,6 @@ const CloseButton = styled.button`
 `;
 
 const EditButton = styled.button`
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
   background: #1A1B4B;
   color: white;
   border: none;
@@ -415,23 +414,181 @@ const SaveButton = styled(EditButton)`
   }
 `;
 
+const StyledModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
+
+const StyledModalContent = styled.div`
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+`;
+
+const CloseModalButton = styled.button`
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #333;
+  
+  &:hover {
+    color: #ff4757;
+  }
+`;
+
+const ModalTitle = styled.h2`
+  margin: 0 0 15px;
+  font-size: 24px;
+  color: #1A1B4B;
+`;
+
+const ModalText = styled.p`
+  margin: 10px 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #555;
+`;
+
+const UpcomingClassList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Space between class items */
+  max-height: 250px; /* Set a maximum height for the list */
+  overflow-y: auto; /* Enable vertical scrolling */
+`;
+
+const ShowMoreButton = styled.button`
+  background: #1A1B4B; /* Primary button color */
+  color: white;
+  border: none;
+  padding: 10px 20px; /* Padding for button */
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px; /* Margin above the button */
+
+  &:hover {
+    background: #2A2B5B; /* Darker shade on hover */
+  }
+`;
+
 const MemberDashboard = () => {
   const navigate = useNavigate();
   const memberName = JSON.parse(localStorage.getItem('memberData')).member.name; // This retrieves the name from localStorage
   const [selectedEquipment, setSelectedEquipment] = useState('');
   const [duration, setDuration] = useState('');
   const [usageHistory, setUsageHistory] = useState([]);
+  const [upcomingClasses, setUpcomingClasses] = useState([]); // State for upcoming classes
+  const [selectedSession, setSelectedSession] = useState(null); // State for selected session
+  const [showModal, setShowModal] = useState(false); // State for modal visibility
   const [showProfile, setShowProfile] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState({
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 234 567 8900',
-    address: '123 Fitness Street, Gym City',
-    emergencyContact: 'Jane Doe - +1 234 567 8901',
-    healthConditions: 'None',
-    fitnessGoals: 'Build muscle and improve endurance'
-  });
+  const [profileData, setProfileData] = useState(false);
+  const [visibleSessions, setVisibleSessions] = useState(3); // State to control the number of visible sessions
+
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        const token = localStorage.getItem('memberToken'); // Get the member token from local storage
+        const response = await axios.get(`${API_BASE_URL}/members/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}` // Include the token in the request headers
+          }
+        });
+
+        // Map the API response to profileData
+        setProfileData({
+          name: response.data.name,
+          email: response.data.email,
+          phone: '+1 234 567 8900', // Dummy data
+          age: response.data.age,
+          address: '123 Fitness Street, Gym City', // Dummy data
+          emergencyContact: 'Jane Doe - +1 234 567 8901', // Dummy data
+          healthConditions: 'None', // Dummy data
+          fitnessGoals: 'Build muscle and improve endurance', // Dummy data
+          membershipPlanName: response.data.membership.planName, // New field for membership plan
+          membershipPlanStartDate: new Date(response.data.planStartDate), // New field for membership start date
+          membershipPlanEndDate: new Date(response.data.planEndDate) // New field for membership end date
+        });
+      console.log('Profile data response:', response.data);
+      } catch (error) {
+        console.error('Error fetching profile data:', error);
+        // Handle error (e.g., show a notification or redirect to login)
+      }
+    };
+
+    const fetchUpcomingClasses = async () => {
+      try {
+        const token = localStorage.getItem('memberToken'); // Get the token from local storage
+        const response = await axios.get(`${API_BASE_URL}/sessions/`, {
+          headers: {
+            Authorization: `Bearer ${token}` // Include the token in the request headers
+          }
+        });
+        setUpcomingClasses(response.data); // Set the upcoming classes data
+      } catch (error) {
+        console.error('Error fetching upcoming classes:', error);
+        // Handle error (e.g., show a notification)
+      }
+    };
+
+    fetchProfileData(); // Call the function to fetch profile data
+    fetchUpcomingClasses(); // Call the function to fetch upcoming classes
+  }, []);
+
+  const handleSessionClick = (session) => {
+    setSelectedSession(session);
+    setShowModal(true);
+  };
+
+  // Function to close the modal
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedSession(null);
+  };
+  
+  const handleShowMore = () => {
+    setVisibleSessions((prev) => prev + 3); // Show three more sessions
+  };
+
+  const calculateProgress = (startDate, endDate) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const now = new Date();
+
+    if (now < start) return 0; // No progress if the membership hasn't started
+    if (now > end) return 100; // Full progress if the membership has ended
+
+    const totalDuration = end - start; // Total duration in milliseconds
+    const elapsedDuration = now - start; // Elapsed duration in milliseconds
+    const progress = (elapsedDuration / totalDuration) * 100; // Calculate progress percentage
+
+    return Math.min(Math.max(progress, 0), 100); // Ensure progress is between 0 and 100
+  };
+
+  // Function to calculate remaining days
+  const calculateRemainingDays = (endDate) => {
+    const end = new Date(endDate);
+    const now = new Date();
+    const remainingTime = end - now; // Remaining time in milliseconds
+
+    return Math.ceil(remainingTime / (1000 * 60 * 60 * 24)); // Convert to days
+  };
 
   const equipmentList = [
     'Treadmill', 'Elliptical', 'Exercise Bike', 'Rowing Machine',
@@ -506,12 +663,12 @@ const MemberDashboard = () => {
       <DashboardGrid>
         <MembershipCard>
           <h2>Membership Status</h2>
-          <p>Premium Plan</p>
-          <p>Valid until: Dec 31, 2024</p>
-          <ProgressBar progress={75}>
+          <p style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '25px' }}>{profileData.membershipPlanName}</p>
+          <p>Valid until: {new Date(profileData.membershipPlanEndDate).toLocaleDateString()}</p>
+          <ProgressBar progress={calculateProgress(profileData.membershipPlanStartDate, profileData.membershipPlanEndDate)}>
             <div />
           </ProgressBar>
-          <p style={{ marginTop: '10px', fontSize: '14px' }}>75 days remaining</p>
+          <p style={{ marginTop: '10px', fontSize: '14px' }}>{calculateRemainingDays(profileData.membershipPlanEndDate)} days remaining</p>
         </MembershipCard>
 
         <Card>
@@ -568,26 +725,38 @@ const MemberDashboard = () => {
           </UsageList>
         </Card>
 
+        {/* Upcoming Classes Section */}
         <Card>
-          <h2>Upcoming Classes</h2>
-          <ClassList>
-            <ClassItem>
+        <h2>Upcoming Classes</h2>
+        <UpcomingClassList>
+          {upcomingClasses.slice(0, visibleSessions).map((classItem) => (
+            <ClassItem key={classItem.id} onClick={() => handleSessionClick(classItem)}>
               <div className="class-info">
-                <h3>Yoga Basics</h3>
-                <p>Today, 2:00 PM</p>
+                <h3>{classItem.sessionName}</h3>
+                <p>{new Date(classItem.schedule).toLocaleString()}</p>
               </div>
-              <JoinButton>Join</JoinButton>
             </ClassItem>
-            <ClassItem>
-              <div className="class-info">
-                <h3>HIIT Training</h3>
-                <p>Tomorrow, 10:00 AM</p>
-              </div>
-              <JoinButton>Join</JoinButton>
-            </ClassItem>
-          </ClassList>
-        </Card>
+          ))}
+        </UpcomingClassList>
+        {visibleSessions < upcomingClasses.length && (
+          <ShowMoreButton onClick={handleShowMore}>Show More</ShowMoreButton>
+        )}
+      </Card>
 
+      {showModal && selectedSession && (
+        <StyledModal>
+          <StyledModalContent>
+            <CloseModalButton onClick={closeModal}>×</CloseModalButton>
+            <ModalTitle>{selectedSession.sessionName}</ModalTitle>
+            <ModalText><strong>Schedule:</strong> {new Date(selectedSession.schedule).toLocaleString()}</ModalText>
+            <ModalText><strong>Trainer:</strong> {selectedSession.trainer.name}</ModalText>
+            <ModalText><strong>Capacity:</strong> {selectedSession.capacity}</ModalText>
+            <ModalText><strong>Description:</strong> {selectedSession.description}</ModalText>
+            <JoinButton>Join</JoinButton>
+          </StyledModalContent>
+        </StyledModal>
+      )}
+        
         <Card>
           <h2>Recent Activity</h2>
           <ClassList>
@@ -645,6 +814,15 @@ const MemberDashboard = () => {
                   type="tel"
                   value={profileData.phone}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
+                />
+              </ProfileField>
+
+              <ProfileField isEditing={isEditing}>
+                <label>Age</label>
+                <input
+                  type="number"
+                  value={profileData.age}
+                  onChange={(e) => handleInputChange('age', e.target.value)}
                 />
               </ProfileField>
             </ProfileSection>

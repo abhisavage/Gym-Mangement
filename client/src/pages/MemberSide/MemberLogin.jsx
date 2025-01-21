@@ -40,7 +40,7 @@ const Form = styled.form`
 const InputGroup = styled.div`
   position: relative; // Position relative for absolute positioning of the icon
   display: flex;
-  flex-direct/ion: column;
+  flex-direction: column;
   gap: 8px;
 `;
 

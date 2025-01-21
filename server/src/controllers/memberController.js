@@ -117,8 +117,10 @@ const memberController = {
       if (!member) {
         return res.status(404).json({ message: 'Member not found' });
       }
-
-      res.json(member);
+      // Exclude the password from the response
+      const { password, ...memberData } = member;
+      // console.log(memberData);
+      res.json(memberData);
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
