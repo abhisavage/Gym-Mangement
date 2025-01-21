@@ -714,14 +714,10 @@ const MemberDashboard = () => {
             Buy Plan
             </PlanButton>
           )}
-          {/* <PlanButton onClick={() => navigate('/members/buyplan')} style={{ position: 'absolute', bottom: '20px', right: '20px' }}>
-            Buy Plan
-          </PlanButton> */}
+          
         </MembershipCard>
 
-        <Button onClick={() => navigate('/member/buyplan')} style={{ position: 'absolute', bottom: '20px', right: '20px' }}>
-        Buy Plan
-        </Button>
+        
 
         <Card>
           <h2>Record Equipment Usage</h2>
