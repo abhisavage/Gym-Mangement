@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import API_BASE_URL from '../../config';
 
 const Container = styled.div`
   background: white;
@@ -22,8 +24,8 @@ const Subtitle = styled.p`
 `;
 
 const PlanGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  justify-content: center;
   gap: 20px;
   max-width: 1200px;
   width: 100%;
@@ -31,12 +33,15 @@ const PlanGrid = styled.div`
 
 const PlanCard = styled.div`
   background: #e0f7fa; /* Light blue background */
+  width: 300px;
   border-radius: 15px;
   padding: 30px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   text-align: center;
   transition: transform 0.3s;
-
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   &:hover {
     transform: translateY(-5px);
   }
@@ -87,13 +92,43 @@ const BackButton = styled(BuyButton)`
   }
 `;
 
+
 const BuyPlan = () => {
   const navigate = useNavigate();
+  const [membershipPlans, setMembershipPlans] = useState([]); // State for membership plans
 
-  const handleBuyPlan = (plan) => {
-    // Handle the logic for buying the selected plan
-    console.log(`Buying ${plan}`);
-    // Redirect or show confirmation
+  useEffect(() => {
+    const fetchMembershipPlans = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/memberships/plans`);
+        setMembershipPlans(response.data.plans); // Set the fetched membership plans
+      } catch (error) {
+        console.error('Error fetching membership plans:', error);
+      }
+    };
+
+    fetchMembershipPlans(); // Call the function to fetch membership plans
+  }, []);
+
+  const handleBuyPlan = async (planId) => {
+    try {
+      const token = localStorage.getItem('memberToken'); // Get the member token from local storage
+      const response = await axios.post(`${API_BASE_URL}/memberships/purchase/${planId}`, {
+        paymentMode: 'Credit Card' // Example payment mode; adjust as needed
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}` // Include the token in the request headers
+        }
+      });
+
+      // Handle successful response
+      console.log('Plan purchased successfully:', response.data);
+      // Optionally redirect or show a success message
+      navigate('/member/dashboard'); // Redirect to the dashboard after purchase
+    } catch (error) {
+      console.error('Error purchasing membership plan:', error);
+      // Handle error (e.g., show a notification)
+    }
   };
 
   return (
@@ -101,36 +136,22 @@ const BuyPlan = () => {
       <Title>Choose Your Plan</Title>
       <Subtitle>Select the plan that works for you</Subtitle>
       <PlanGrid>
-        <PlanCard>
-          <PlanTitle>1 Month Plan</PlanTitle>
-          <PlanPrice>$20</PlanPrice>
-          <PlanFeatures>
-            <FeatureItem>✓ Unlimited access</FeatureItem>
-            <FeatureItem>✓ 24/7 Support</FeatureItem>
-            <FeatureItem>✓ Cancel anytime</FeatureItem>
-          </PlanFeatures>
-          <BuyButton onClick={() => handleBuyPlan('1 Month Plan')}>Get Started</BuyButton>
-        </PlanCard>
-        <PlanCard>
-          <PlanTitle>3 Month Plan</PlanTitle>
-          <PlanPrice>$50</PlanPrice>
-          <PlanFeatures>
-            <FeatureItem>✓ Unlimited access</FeatureItem>
-            <FeatureItem>✓ 24/7 Support</FeatureItem>
-            <FeatureItem>✓ Cancel anytime</FeatureItem>
-          </PlanFeatures>
-          <BuyButton onClick={() => handleBuyPlan('3 Month Plan')}>Get Started</BuyButton>
-        </PlanCard>
-        <PlanCard>
-          <PlanTitle>Yearly Plan</PlanTitle>
-          <PlanPrice>$180</PlanPrice>
-          <PlanFeatures>
-            <FeatureItem>✓ Unlimited access</FeatureItem>
-            <FeatureItem>✓ 24/7 Support</FeatureItem>
-            <FeatureItem>✓ Cancel anytime</FeatureItem>
-          </PlanFeatures>
-          <BuyButton onClick={() => handleBuyPlan('Yearly Plan')}>Get Started</BuyButton>
-        </PlanCard>
+        {membershipPlans.map((plan) => (
+          <PlanCard key={plan.id}>
+            <div>
+            <PlanTitle>{plan.planName}</PlanTitle>
+            <PlanPrice>₹{plan.cost}</PlanPrice> {/* Assuming cost is in rupees */}
+            </div>
+            <PlanFeatures>
+              {plan.features.map((feature, index) => (
+                <FeatureItem key={index}>{feature}</FeatureItem>
+              ))}
+            </PlanFeatures>
+            
+              <BuyButton onClick={() => handleBuyPlan(plan.id)}>Get Started</BuyButton>
+            
+          </PlanCard>
+        ))}
       </PlanGrid>
       <BackButton onClick={() => navigate('/member/dashboard')}>Back to Dashboard</BackButton>
     </Container>

@@ -514,7 +514,10 @@ const MemberDashboard = () => {
   const [selectedSession, setSelectedSession] = useState(null); // State for selected session
   const [showModal, setShowModal] = useState(false); // State for modal visibility
   const [showProfile, setShowProfile] = useState(false);
+  const [usageDate, setUsageDate] = useState(''); // State for usage date
+  const [usageTime, setUsageTime] = useState(''); // State for usage time
   const [isEditing, setIsEditing] = useState(false);
+  const [recentUsages, setRecentUsages] = useState([]); // State for recent equipment usages
   const [equipmentList, setEquipmentList] = useState([]); // State for equipment
   const [attendedSessions, setAttendedSessions] = useState([]);
   const [profileData, setProfileData] = useState(false);
@@ -590,6 +593,21 @@ const MemberDashboard = () => {
       }
     };
 
+    const fetchRecentUsages = async () => {
+      try {
+        const token = localStorage.getItem('memberToken');
+        const response = await axios.get(`${API_BASE_URL}/equipment/usage/history`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setRecentUsages(response.data); // Set the fetched recent usages data
+      } catch (error) {
+        console.error('Error fetching recent equipment usages:', error);
+      }
+    };
+
+    fetchRecentUsages();
     fetchProfileData(); // Call the function to fetch profile data
     fetchUpcomingClasses(); // Call the function to fetch upcoming classes
     fetchEquipmentData();
@@ -635,29 +653,34 @@ const MemberDashboard = () => {
   };
 
 
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // Prevent default form submission
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!selectedEquipment || !duration) {
-      toast.error('Please fill in all fields');
-      return;
+    try {
+      const token = localStorage.getItem('memberToken');
+      const currentDate = new Date(); // Get the current date and time
+      const response = await axios.post(`${API_BASE_URL}/equipment/usage`, {
+        equipmentId: selectedEquipment, // Use the selected equipment ID
+        duration: parseInt(duration, 10), // Convert duration to integer before sending
+        date: currentDate.toISOString(),// Send date only
+        time: currentDate.toISOString() // Send time only
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      // Handle successful response
+      console.log('Usage recorded successfully:', response.data);
+      // Optionally reset the form or update the UI
+      setSelectedEquipment('');
+      setDuration('');
+      setUsageDate('');
+      setUsageTime('');
+    } catch (error) {
+      console.error('Error recording equipment usage:', error);
+      // Handle error (e.g., show a notification)
     }
-    if (duration <= 0) {
-      toast.error('Duration must be greater than 0');
-      return;
-    }
-
-    const newUsage = {
-      id: Date.now(),
-      equipment: selectedEquipment,
-      duration: parseInt(duration),
-      timestamp: new Date().toLocaleString()
-    };
-
-    setUsageHistory([newUsage, ...usageHistory]);
-    setSelectedEquipment('');
-    setDuration('');
-    toast.success('Equipment usage recorded!');
   };
 
   const handleDelete = (id) => {
@@ -703,20 +726,25 @@ const MemberDashboard = () => {
         <MembershipCard>
           <h2>Membership Status</h2>
           <p style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '25px' }}>{profileData.membershipPlanName}</p>
-          <p>Valid until: {profileData.membershipPlanEndDate ? new Date(profileData.membershipPlanEndDate).toLocaleDateString() : (
-            <>
-              Seems Like You Have Not Bought Any Plan 
-              <br />
-              Start Your Journey Now
-            </>
-            )}</p>
-          <ProgressBar progress={calculateProgress(profileData.membershipPlanStartDate, profileData.membershipPlanEndDate)}>
-            <div />
-          </ProgressBar>
+          <p>
+            {(profileData.membershipPlanName || new Date(profileData.membershipPlanEndDate) < new Date()) 
+              ? 'Valid until: ' + new Date(profileData.membershipPlanEndDate).toLocaleDateString() 
+              : <span style={{ fontSize: '20px'}}>Seems Like, You Have Not Bought Any Plan</span>}
+          </p>
+          {profileData.membershipPlanName && new Date(profileData.membershipPlanEndDate) >= new Date() && (
+            <ProgressBar progress={calculateProgress(profileData.membershipPlanStartDate, profileData.membershipPlanEndDate)}>
+              <div />
+            </ProgressBar>
+          )}
           
-          <p style={{ marginTop: '10px', fontSize: '14px' }}>{calculateRemainingDays(profileData.membershipPlanEndDate)} days remaining</p>
+          <p style={{ marginTop: '10px', fontSize: '14px' }}>{profileData.membershipPlanEndDate? calculateRemainingDays(profileData.membershipPlanEndDate) + ' days remaining' :
+          (<>
+          <span style={{ fontSize: '18px'}}>
+          Start Your Journey Now
+          </span>
+          </>)}</p>
           {(!profileData.membershipPlanName || new Date(profileData.membershipPlanEndDate) < new Date()) && (
-            <PlanButton onClick={() => navigate('/members/buyplan')} style={{ position: 'absolute', bottom: '20px', right: '20px' }}>
+            <PlanButton onClick={() => navigate('/member/buyplan')} style={{ position: 'absolute', bottom: '20px', right: '20px' }}>
             Buy Plan
             </PlanButton>
           )}
@@ -735,7 +763,7 @@ const MemberDashboard = () => {
               >
                 <option value="">Choose equipment</option>
                 {equipmentList.map((equipment) => (
-                  <option key={equipment.id} value={equipment.name}>
+                  <option key={equipment.id} value={equipment.id}>
                     {equipment.name}
                   </option>
                 ))}
@@ -758,27 +786,26 @@ const MemberDashboard = () => {
         </Card>
 
         <Card>
-          <h2>Recent Equipment Usage</h2>
-          <UsageList>
-            {usageHistory.map((usage) => (
-              <UsageCard key={usage.id}>
-                <div className="usage-info">
-                  <h3>{usage.equipment}</h3>
-                  <p>{usage.duration} minutes • {usage.timestamp}</p>
-                </div>
-                <DeleteButton onClick={() => handleDelete(usage.id)}>
-                  Delete
-                </DeleteButton>
-              </UsageCard>
-            ))}
-            {usageHistory.length === 0 && (
-              <p>No equipment usage recorded yet.</p>
-            )}
-          </UsageList>
-        </Card>
+        <h2>Recent Equipment Usages</h2>
+        <UsageList>
+          {recentUsages.map((usage) => (
+            <UsageCard key={usage.id}>
+              <div className="usage-info">
+              <h3 style={{ fontSize: '20px' }}>{usage.equipment.name} <span style={{ fontSize: '14px', color: '#666' }}>({usage.equipment.category})</span></h3>
+                <p style={{ fontSize: '12px', color: '#666' }}>
+                  {new Date(usage.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} • {usage.duration} min
+                </p>
+              </div>
+            </UsageCard>
+          ))}
+          {recentUsages.length === 0 && (
+            <p>No recent equipment usages recorded yet.</p>
+          )}
+        </UsageList>
+      </Card>
 
         {/* Upcoming Classes Section */}
-        <Card>
+      <Card>
         <h2>Upcoming Sessions</h2>
         <UpcomingClassList>
           {upcomingClasses.slice(0, visibleSessions).map((classItem) => (
@@ -814,17 +841,21 @@ const MemberDashboard = () => {
         
         <Card>
         <h2>Attended Sessions</h2>
-        <UpcomingClassList>
-          {attendedSessions.map(session => (
-            <ClassItem key={session.id} onClick={() => handleSessionClick(session)}>
-              <div className="class-info">
-                <h3 style={{ cursor: 'pointer' }}>{session.sessionName}</h3>
-                <p>{new Date(session.schedule).toLocaleString()}</p>
-              </div>
-              <StatusTag>Completed</StatusTag>
-            </ClassItem>
-          ))}
-        </UpcomingClassList>
+        {attendedSessions.length === 0 ? (
+          <p>You have not attended any sessions</p>
+        ) : (
+          <UpcomingClassList>
+            {attendedSessions.map(session => (
+              <ClassItem key={session.id} onClick={() => handleSessionClick(session)}>
+                <div className="class-info">
+                  <h3 style={{ cursor: 'pointer' }}>{session.sessionName}</h3>
+                  <p>{new Date(session.schedule).toLocaleString()}</p>
+                </div>
+                <StatusTag>Completed</StatusTag>
+              </ClassItem>
+            ))}
+          </UpcomingClassList>
+        )}
       </Card>
 
       {showModal && selectedSession && (

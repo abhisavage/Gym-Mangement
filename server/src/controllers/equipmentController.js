@@ -66,20 +66,21 @@ const equipmentController = {
   // Record equipment usage
   recordUsage: async (req, res) => {
     try {
-      const { equipmentId, duration } = req.body;
+      const { equipmentId, duration, date, time } = req.body; // Include date and time from the request
       const memberId = req.user.id;
 
       // Validate input
-      if (!equipmentId) {
-        return res.status(400).json({ message: 'Equipment ID is required' });
+      if (!equipmentId || !date || !time) {
+        return res.status(400).json({ message: 'Equipment ID, date, and time are required' });
       }
 
       const usage = await prisma.usage.create({
         data: {
           memberId,
           equipmentId,
-          time: new Date(),
-          duration,
+          date: new Date(date), // Store date separately
+          time: time, // Store time as a string or appropriate format
+          duration
         }
       });
 
