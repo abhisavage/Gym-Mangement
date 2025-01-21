@@ -338,7 +338,36 @@ const sessionController = {
     } catch (error) {
       res.status(500).json({ message: "Error retrieving sessions", error: error.message });
     }
+  },
+
+  getSessionById: async (req, res) => {
+    try {
+      const { sessionId } = req.params; // Extract sessionId from request parameters
+
+      // Fetch the session details along with the trainer information
+      const session = await prisma.session.findUnique({
+        where: { id: sessionId },
+        include: {
+          trainer: {
+            select: {
+              name: true,
+              speciality: true
+            }
+          }
+        }
+      });
+
+      // Check if the session exists
+      if (!session) {
+        return res.status(404).json({ message: 'Session not found' });
+      }
+
+      // Return the session details
+      res.json(session);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
   }
 };
 
-module.exports = sessionController; 
+module.exports = sessionController;

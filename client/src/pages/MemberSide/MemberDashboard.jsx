@@ -463,6 +463,7 @@ const ModalText = styled.p`
   font-size: 16px;
   line-height: 1.5;
   color: #555;
+  
 `;
 
 const UpcomingClassList = styled.div`
@@ -498,6 +499,8 @@ const MemberDashboard = () => {
   const [showModal, setShowModal] = useState(false); // State for modal visibility
   const [showProfile, setShowProfile] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [equipmentList, setEquipmentList] = useState([]); // State for equipment
+  const [attendedSessions, setAttendedSessions] = useState([]);
   const [profileData, setProfileData] = useState(false);
   const [visibleSessions, setVisibleSessions] = useState(3); // State to control the number of visible sessions
 
@@ -510,7 +513,7 @@ const MemberDashboard = () => {
             Authorization: `Bearer ${token}` // Include the token in the request headers
           }
         });
-
+        
         // Map the API response to profileData
         setProfileData({
           name: response.data.name,
@@ -525,7 +528,16 @@ const MemberDashboard = () => {
           membershipPlanStartDate: new Date(response.data.planStartDate), // New field for membership start date
           membershipPlanEndDate: new Date(response.data.planEndDate) // New field for membership end date
         });
+
       console.log('Profile data response:', response.data);
+      const registrations = response.data.registrations;
+        const sessionDetailsPromises = registrations.map(registration =>
+          axios.get(`${API_BASE_URL}/sessions/${registration.sessionId}`)
+        );
+
+        const sessionDetailsResponses = await Promise.all(sessionDetailsPromises);
+        const sessions = sessionDetailsResponses.map(res => res.data);
+        setAttendedSessions(sessions);
       } catch (error) {
         console.error('Error fetching profile data:', error);
         // Handle error (e.g., show a notification or redirect to login)
@@ -547,8 +559,24 @@ const MemberDashboard = () => {
       }
     };
 
+    const fetchEquipmentData = async () => {
+      try {
+        const token = localStorage.getItem('memberToken');
+        const response = await axios.get(`${API_BASE_URL}/equipment/`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        setEquipmentList(response.data); // Set the fetched equipment data
+      } catch (error) {
+        console.error('Error fetching equipment data:', error);
+      }
+    };
+
     fetchProfileData(); // Call the function to fetch profile data
     fetchUpcomingClasses(); // Call the function to fetch upcoming classes
+    fetchEquipmentData();
   }, []);
 
   const handleSessionClick = (session) => {
@@ -590,12 +618,7 @@ const MemberDashboard = () => {
     return Math.ceil(remainingTime / (1000 * 60 * 60 * 24)); // Convert to days
   };
 
-  const equipmentList = [
-    'Treadmill', 'Elliptical', 'Exercise Bike', 'Rowing Machine',
-    'Leg Press', 'Chest Press', 'Shoulder Press', 'Lat Pulldown',
-    'Cable Machine', 'Smith Machine', 'Dumbbells', 'Barbells',
-    'Squat Rack', 'Bench Press'
-  ];
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -671,7 +694,7 @@ const MemberDashboard = () => {
           <p style={{ marginTop: '10px', fontSize: '14px' }}>{calculateRemainingDays(profileData.membershipPlanEndDate)} days remaining</p>
         </MembershipCard>
 
-        <Button onClick={() => navigate('/members/buyplan')} style={{ position: 'absolute', bottom: '20px', right: '20px' }}>
+        <Button onClick={() => navigate('/member/buyplan')} style={{ position: 'absolute', bottom: '20px', right: '20px' }}>
         Buy Plan
         </Button>
 
@@ -687,8 +710,8 @@ const MemberDashboard = () => {
               >
                 <option value="">Choose equipment</option>
                 {equipmentList.map((equipment) => (
-                  <option key={equipment} value={equipment}>
-                    {equipment}
+                  <option key={equipment.id} value={equipment.name}>
+                    {equipment.name}
                   </option>
                 ))}
               </Select>
@@ -731,12 +754,12 @@ const MemberDashboard = () => {
 
         {/* Upcoming Classes Section */}
         <Card>
-        <h2>Upcoming Classes</h2>
+        <h2>Upcoming Sessions</h2>
         <UpcomingClassList>
           {upcomingClasses.slice(0, visibleSessions).map((classItem) => (
             <ClassItem key={classItem.id} onClick={() => handleSessionClick(classItem)}>
               <div className="class-info">
-                <h3>{classItem.sessionName}</h3>
+                <h3 style={{ cursor: 'pointer' }}>{classItem.sessionName}</h3>
                 <p>{new Date(classItem.schedule).toLocaleString()}</p>
               </div>
             </ClassItem>
@@ -756,30 +779,45 @@ const MemberDashboard = () => {
             <ModalText><strong>Trainer:</strong> {selectedSession.trainer.name}</ModalText>
             <ModalText><strong>Capacity:</strong> {selectedSession.capacity}</ModalText>
             <ModalText><strong>Description:</strong> {selectedSession.description}</ModalText>
-            <JoinButton>Join</JoinButton>
+            {/* Only show Join button for upcoming sessions */}
+            { !attendedSessions.some(attended => attended.id === selectedSession.id) && (
+              <JoinButton>Join</JoinButton>
+            )}
           </StyledModalContent>
         </StyledModal>
       )}
         
         <Card>
-          <h2>Recent Activity</h2>
-          <ClassList>
-            <ClassItem>
+        <h2>Attended Sessions</h2>
+        <UpcomingClassList>
+          {attendedSessions.map(session => (
+            <ClassItem key={session.id} onClick={() => handleSessionClick(session)}>
               <div className="class-info">
-                <h3>Weight Training</h3>
-                <p>Yesterday, 3:00 PM</p>
+                <h3 style={{ cursor: 'pointer' }}>{session.sessionName}</h3>
+                <p>{new Date(session.schedule).toLocaleString()}</p>
               </div>
               <StatusTag>Completed</StatusTag>
             </ClassItem>
-            <ClassItem>
-              <div className="class-info">
-                <h3>Cardio Session</h3>
-                <p>2 days ago</p>
-              </div>
-              <StatusTag>Completed</StatusTag>
-            </ClassItem>
-          </ClassList>
-        </Card>
+          ))}
+        </UpcomingClassList>
+      </Card>
+
+      {showModal && selectedSession && (
+        <StyledModal>
+          <StyledModalContent>
+            <CloseModalButton onClick={closeModal}>×</CloseModalButton>
+            <ModalTitle>{selectedSession.sessionName}</ModalTitle>
+            <ModalText><strong>Schedule:</strong> {new Date(selectedSession.schedule).toLocaleString()}</ModalText>
+            <ModalText><strong>Trainer:</strong> {selectedSession.trainer.name}</ModalText>
+            <ModalText><strong>Capacity:</strong> {selectedSession.capacity}</ModalText>
+            <ModalText><strong>Description:</strong> {selectedSession.description}</ModalText>
+            {/* Only show Join button for upcoming sessions */}
+            { !attendedSessions.some(attended => attended.id === selectedSession.id) && (
+              <JoinButton>Join</JoinButton>
+            )}
+          </StyledModalContent>
+        </StyledModal>
+      )}
       </DashboardGrid>
 
       {showProfile && (

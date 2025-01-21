@@ -110,7 +110,8 @@ const memberController = {
       const member = await prisma.member.findUnique({
         where: { id: req.user.id },
         include: {
-          membership: true
+          membership: true,
+          registrations: true
         }
       });
 

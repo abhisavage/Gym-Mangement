@@ -22,6 +22,7 @@ router.get('/getAll', adminAuth, equipmentController.getAllEquipment);
 // router.get('/debug/all-usages', adminAuth, equipmentController.getAllUsageRecords);
 
 // Member routes (only for recording their own usage)
+router.get('/', memberAuth, equipmentController.getAllEquipment);
 router.post('/usage', memberAuth, equipmentController.recordUsage);
 router.get('/usage/history', memberAuth, equipmentController.getMemberUsageHistory);
 
