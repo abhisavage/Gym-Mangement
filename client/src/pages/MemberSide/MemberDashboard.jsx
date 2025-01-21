@@ -123,6 +123,7 @@ const Card = styled.div`
 const MembershipCard = styled(Card)`
   background: linear-gradient(135deg, #1A1B4B 0%, #4A4B8F 100%);
   color: white;
+  position: relative;
 
   h2 {
     color: white;
@@ -488,6 +489,21 @@ const ShowMoreButton = styled.button`
   }
 `;
 
+const PlanButton = styled.div`
+  background: white;
+  border: none;
+  padding: 8px 16px; // Reduce padding for smaller size
+  border-radius: 25px;
+  color: #1A1B4B;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  position: absolute; // Change to absolute positioning
+  bottom: 20px; // Position it at the bottom
+  right: 20px; // Position it to the right
+`;
+
 const MemberDashboard = () => {
   const navigate = useNavigate();
   const memberName = JSON.parse(localStorage.getItem('memberData')).member.name; // This retrieves the name from localStorage
@@ -691,7 +707,16 @@ const MemberDashboard = () => {
           <ProgressBar progress={calculateProgress(profileData.membershipPlanStartDate, profileData.membershipPlanEndDate)}>
             <div />
           </ProgressBar>
+          
           <p style={{ marginTop: '10px', fontSize: '14px' }}>{calculateRemainingDays(profileData.membershipPlanEndDate)} days remaining</p>
+          {(!profileData.membershipPlanName || new Date(profileData.membershipPlanEndDate) < new Date()) && (
+            <PlanButton onClick={() => navigate('/members/buyplan')} style={{ position: 'absolute', bottom: '20px', right: '20px' }}>
+            Buy Plan
+            </PlanButton>
+          )}
+          {/* <PlanButton onClick={() => navigate('/members/buyplan')} style={{ position: 'absolute', bottom: '20px', right: '20px' }}>
+            Buy Plan
+          </PlanButton> */}
         </MembershipCard>
 
         <Button onClick={() => navigate('/member/buyplan')} style={{ position: 'absolute', bottom: '20px', right: '20px' }}>
