@@ -703,7 +703,13 @@ const MemberDashboard = () => {
         <MembershipCard>
           <h2>Membership Status</h2>
           <p style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '25px' }}>{profileData.membershipPlanName}</p>
-          <p>Valid until: {profileData.membershipPlanEndDate ? new Date(profileData.membershipPlanEndDate).toLocaleDateString() : 'Not Applicable'}</p>
+          <p>Valid until: {profileData.membershipPlanEndDate ? new Date(profileData.membershipPlanEndDate).toLocaleDateString() : (
+            <>
+              Seems Like You Have Not Bought Any Plan 
+              <br />
+              Start Your Journey Now
+            </>
+            )}</p>
           <ProgressBar progress={calculateProgress(profileData.membershipPlanStartDate, profileData.membershipPlanEndDate)}>
             <div />
           </ProgressBar>
@@ -716,9 +722,7 @@ const MemberDashboard = () => {
           )}
           
         </MembershipCard>
-
         
-
         <Card>
           <h2>Record Equipment Usage</h2>
           <EquipmentForm onSubmit={handleSubmit}>
