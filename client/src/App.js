@@ -17,14 +17,13 @@ import RegisterAdmin from './pages/AdminProfile/RegisterAdmin';
 
 // Client-side imports
 import CSPLanding from './pages/ClientSide/CSPLanding';
-import CSPMemberDashboard from './pages/ClientSide/CSPMemberDashboard';
-import CSPLogin from './pages/ClientSide/CSPLogin';
 import TrainerLogin from './pages/TrainerSide/TrainerLogin';
 import RoleSelection from './pages/RoleSelection';
 import TrainerDashboard from './pages/TrainerSide/TrainerDashboard';
 import MemberLogin from './pages/MemberSide/MemberLogin';
 import MemberRegister from './pages/MemberSide/MemberRegister';
 import MemberDashboard from './pages/MemberSide/MemberDashboard';
+import MemberPlan from './pages/MemberSide/MemberPlan';
 
 function App() {
   return (
@@ -33,11 +32,9 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<CSPLanding />} />
         <Route path="/role-selection" element={<RoleSelection />} />
-        {/* <Route path="/member/login" element={<CSPLogin />} /> */}
-        <Route path="/trainer/login" element={<TrainerLogin />} />
-        <Route path="/admin/login" element={<Login />} />
-        
+
         {/* Admin Routes */}
+        <Route path="/admin/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/admin-profile" element={<AdminProfile />} />
         <Route path="/registration" element={<Registration />} />
@@ -50,22 +47,14 @@ function App() {
         <Route path="/admin/register" element={<RegisterAdmin />} />
 
         {/* Client Routes */}
-        <Route path="/member/dashboard" element={<MemberDashboard />} />
-
-        {/* Trainer Routes */}
-        <Route 
-          path="/trainer/dashboard" 
-          element={
-            // Basic route protection
-            // localStorage.getItem('trainerData') ? 
-            <TrainerDashboard />  
-            // <Navigate to="/trainer/login" replace />
-          } 
-        />
-
         <Route path="/member/login" element={<MemberLogin />} />
         <Route path="/member/register" element={<MemberRegister />} />
-      
+        <Route path="/member/dashboard" element={<MemberDashboard />} />
+        <Route path="/member/buyplan" element={<MemberPlan/>} />
+
+        {/* Trainer Routes */}
+        <Route path="/trainer/login" element={<TrainerLogin />} />
+        <Route path="/trainer/dashboard" element={<TrainerDashboard />  } />   
       </Routes>
       <ToastContainer position="top-right" autoClose={3000} />
     </>

@@ -489,7 +489,7 @@ const ShowMoreButton = styled.button`
 
 const MemberDashboard = () => {
   const navigate = useNavigate();
-  const memberName = JSON.parse(localStorage.getItem('memberData')).member.name; // This retrieves the name from localStorage
+  const memberName = JSON.parse(localStorage.getItem('memberData')).member.name; // This retrieves the name from localStorage
   const [selectedEquipment, setSelectedEquipment] = useState('');
   const [duration, setDuration] = useState('');
   const [usageHistory, setUsageHistory] = useState([]);
@@ -664,12 +664,16 @@ const MemberDashboard = () => {
         <MembershipCard>
           <h2>Membership Status</h2>
           <p style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: '25px' }}>{profileData.membershipPlanName}</p>
-          <p>Valid until: {new Date(profileData.membershipPlanEndDate).toLocaleDateString()}</p>
+          <p>Valid until: {profileData.membershipPlanEndDate ? new Date(profileData.membershipPlanEndDate).toLocaleDateString() : 'Not Applicable'}</p>
           <ProgressBar progress={calculateProgress(profileData.membershipPlanStartDate, profileData.membershipPlanEndDate)}>
             <div />
           </ProgressBar>
           <p style={{ marginTop: '10px', fontSize: '14px' }}>{calculateRemainingDays(profileData.membershipPlanEndDate)} days remaining</p>
         </MembershipCard>
+
+        <Button onClick={() => navigate('/members/buyplan')} style={{ position: 'absolute', bottom: '20px', right: '20px' }}>
+        Buy Plan
+        </Button>
 
         <Card>
           <h2>Record Equipment Usage</h2>
