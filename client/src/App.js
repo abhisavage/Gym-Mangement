@@ -15,7 +15,7 @@ import Coaches from './pages/Coaches/Coaches';
 import Report from './pages/Report/Report';
 import RegisterAdmin from './pages/AdminProfile/RegisterAdmin';
 
-// Client-side imports 
+// Client-side imports
 import CSPLanding from './pages/ClientSide/CSPLanding';
 import CSPMemberDashboard from './pages/ClientSide/CSPMemberDashboard';
 import CSPLogin from './pages/ClientSide/CSPLogin';
@@ -71,8 +71,5 @@ function App() {
     </>
   );
 }
-// I have made cganges here
-// Changes**
-// Just for testing
 
 export default App;
