@@ -539,10 +539,14 @@ const TrainerDashboard = () => {
           {registeredMembers.length === 0 ? ( // Check if there are no registered members
             <p style={{ margin: '20px 0' }}>No members registered for this session.</p>
           ) : (
-            <ul>
+            <ul style={{ listStyleType: 'none', padding: 0, marginTop: '20px' }}>
               {registeredMembers.map(member => (
-                <li key={member.id}>
-                  {member.name} - {member.email}
+                <li key={member.id} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #e9ecef', borderRadius: '8px', backgroundColor: '#f8f9fa' }}>
+                  <h3 style={{ margin: '0', fontSize: '18px' }}>{member.member.name}</h3>
+                  <p style={{ margin: '5px 0', color: '#666' }}>Email: {member.member.email}</p>
+                  {member.feedback && (
+                    <p style={{ margin: '5px 0', color: '#333' }}>Feedback: {member.feedback}</p>
+                  )}
                 </li>
               ))}
             </ul>
