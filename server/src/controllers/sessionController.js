@@ -367,6 +367,30 @@ const sessionController = {
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
     }
+  },
+
+  // Get registered members for a specific session
+  getRegisteredMembers: async (req, res) => {
+    const { sessionId } = req.params; // Extract sessionId from request parameters
+
+    try {
+      const registrations = await prisma.registration.findMany({
+        where: { sessionId },
+        include: {
+          member: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        }
+      });
+
+      res.json(registrations);
+    } catch (error) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
   }
 };
 

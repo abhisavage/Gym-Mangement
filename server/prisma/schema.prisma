@@ -30,7 +30,7 @@ model Trainer {
   email        String    @unique
   password     String
   speciality   String
-  availability Boolean   @default(true)
+  availability String   @default("0000000")
   sessions     Session[]
 }
 

@@ -29,8 +29,7 @@ const trainerController = {
           email,
           password: hashedPassword,
           age,
-          speciality,
-          availability: true
+          speciality
         }
       });
 

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import {FaEye, FaEyeSlash} from 'react-icons/fa';
+import API_BASE_URL from '../../config';
 
 const LoginContainer = styled.div`
   min-height: 100vh;
@@ -9,6 +11,7 @@ const LoginContainer = styled.div`
   align-items: center;
   justify-content: center;
   background: #F5F5F5;
+  padding: 20px;
 `;
 
 const LoginCard = styled.div`
@@ -34,6 +37,7 @@ const Form = styled.form`
 `;
 
 const InputGroup = styled.div`
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -130,9 +134,73 @@ const OtherSpecialityInput = styled(Input)`
   display: ${props => props.show ? 'block' : 'none'};
 `;
 
+const BackButton = styled.button`
+  background: transparent;
+  border: none;
+  color: #1A1B4B;
+  cursor: pointer;
+  display: block;
+  margin: 20px auto 0;
+  text-align: center;
+  width: fit-content;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const RegButton = styled.button`
+  background: transparent;
+  border: none;
+  color: #1A1B4B;
+  cursor: pointer;
+  display: block;
+  margin: 20px auto 0;
+  text-align: center;
+  width: fit-content;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const Register = styled.button`
+  background: transparent;
+  border: none;
+  color: #1A1B4B;
+  text-decoration: underline;
+  cursor: pointer;
+  display: block;
+  margin: 20px auto 0;
+  text-align: center;
+  width: fit-content;
+  
+  &:hover {
+    color: #2A2B5B;
+  }
+`;
+
+const IconButton = styled.button`
+  position: absolute;
+  right: 10px; // Position the icon inside the input
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #1A1B4B;
+  margin: 15px;
+`;
+
+const PasswordInput = styled(Input)`
+  padding-right: 40px; // Add padding to the right for the icon
+`;
+
+
 const TrainerLogin = () => {
   const navigate = useNavigate();
-  const [isRegistering, setIsRegistering] = useState(false);
+  // const [isRegistering, setIsRegistering] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const [loginData, setLoginData] = useState({
     email: '',
@@ -173,7 +241,7 @@ const TrainerLogin = () => {
     });
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     
     // Basic validation
@@ -189,61 +257,77 @@ const TrainerLogin = () => {
       return;
     }
 
-    // Dummy successful login
-    toast.success('Login successful!');
-    
-    // Store dummy trainer data in localStorage
-    const dummyTrainerData = {
-      id: 'TR' + Math.random().toString(36).substr(2, 9),
-      email: loginData.email,
-      name: 'Trainer User',
-      isLoggedIn: true,
-      role: 'trainer'
-    };
-    
-    localStorage.setItem('trainerData', JSON.stringify(dummyTrainerData));
-    
-    // Redirect to trainer dashboard after short delay
-    setTimeout(() => {
-      navigate('/trainer/dashboard');
-    }, 1500);
+    try {
+      // Call the API to log in
+      const response = await fetch(`${API_BASE_URL}/trainers/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(loginData),
+      });
+
+      const data = await response.json();
+
+      // Debugging: Log the response data
+      console.log('Response Data:', data);
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      // Check if token exists in the response
+      if (data.token) {
+        // Store trainer data and token in localStorage
+        localStorage.setItem('trainerData', JSON.stringify(data.trainer));
+        localStorage.setItem('trainerToken', data.token); // Store the token as well
+
+        toast.success('Login successful!');
+        navigate('/trainer/dashboard');
+        
+      } else {
+        throw new Error('Token not found in response');
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
-  const handleRegister = (e) => {
-    e.preventDefault();
-    if (registerData.password !== registerData.confirmPassword) {
-      toast.error('Passwords do not match!');
-      return;
-    }
+  // const handleRegister = (e) => {
+  //   e.preventDefault();
+  //   if (registerData.password !== registerData.confirmPassword) {
+  //     toast.error('Passwords do not match!');
+  //     return;
+  //   }
 
-    // Validate speciality
-    if (registerData.speciality === 'Others' && !registerData.otherSpeciality) {
-      toast.error('Please specify your speciality');
-      return;
-    }
+  //   // Validate speciality
+  //   if (registerData.speciality === 'Others' && !registerData.otherSpeciality) {
+  //     toast.error('Please specify your speciality');
+  //     return;
+  //   }
 
-    // Get the final speciality value
-    const finalSpeciality = registerData.speciality === 'Others' 
-      ? registerData.otherSpeciality 
-      : registerData.speciality;
+  //   // Get the final speciality value
+  //   const finalSpeciality = registerData.speciality === 'Others' 
+  //     ? registerData.otherSpeciality 
+  //     : registerData.speciality;
 
-    // Create the data to send
-    const dataToSubmit = {
-      ...registerData,
-      speciality: finalSpeciality
-    };
-    delete dataToSubmit.otherSpeciality;
+  //   // Create the data to send
+  //   const dataToSubmit = {
+  //     ...registerData,
+  //     speciality: finalSpeciality
+  //   };
+  //   delete dataToSubmit.otherSpeciality;
 
-    toast.info('Trainer registration functionality will be implemented soon');
-    console.log('Registration data:', dataToSubmit);
-  };
+  //   toast.info('Trainer registration functionality will be implemented soon');
+  //   console.log('Registration data:', dataToSubmit);
+  // };
 
   return (
     <LoginContainer>
       <LoginCard>
-        <Title>{isRegistering ? 'Register as Trainer' : 'Trainer Login'}</Title>
+        <Title>Trainer Login</Title>
         
-        <LoginForm isRegistering={isRegistering} onSubmit={handleLogin}>
+        <LoginForm onSubmit={handleLogin}>
           <InputGroup>
             <Label>Email</Label>
             <Input
@@ -256,18 +340,21 @@ const TrainerLogin = () => {
           
           <InputGroup>
             <Label>Password</Label>
-            <Input
-              type="password"
-              value={loginData.password}
-              onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-              required
-            />
+            <PasswordInput
+                type={showPassword ? "text" : "password"}
+                value={loginData.password}
+                onChange={(e) => setLoginData({...loginData, password: e.target.value})}
+                required
+              />
+              <IconButton onClick={() => setShowPassword(!showPassword)} type="button">
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </IconButton>
           </InputGroup>
           
           <LoginButton type="submit">Login</LoginButton>
         </LoginForm>
 
-        <RegisterForm isRegistering={isRegistering} onSubmit={handleRegister}>
+        {/* <RegisterForm isRegistering={isRegistering} onSubmit={handleRegister}>
           <InputGroup>
             <Label>Full Name</Label>
             <Input
@@ -349,15 +436,14 @@ const TrainerLogin = () => {
           </InputGroup>
 
           <LoginButton type="submit">Register</LoginButton>
-        </RegisterForm>
+        </RegisterForm> */}
 
-        <RegisterLink onClick={() => setIsRegistering(!isRegistering)}>
-          {isRegistering ? 'Already have an account? Login' : 'Register as new trainer'}
-        </RegisterLink>
-        
-        <BackToHome onClick={() => navigate('/role-selection')}>
-        ← Back to Role Selection
-        </BackToHome>
+        <Register>
+          <RegButton onClick={() => navigate('/trainer/register')}>New member? Register</RegButton>
+        </Register>
+        <BackButton onClick={() => navigate('/role-selection')}>
+          ← Back to Role Selection
+        </BackButton>
       </LoginCard>
     </LoginContainer>
   );

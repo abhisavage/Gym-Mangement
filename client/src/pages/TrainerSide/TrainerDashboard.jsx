@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import API_BASE_URL from '../../config';
 
 const DashboardContainer = styled.div`
   min-height: 100vh;
@@ -150,9 +151,7 @@ const Button = styled.button`
   transition: all 0.3s ease;
   font-weight: 600;
   font-size: 1rem;
-  position: relative;
-  overflow: hidden;
-  margin-top: 10px;
+  margin-top: 20px;
 
   &:hover {
     transform: translateY(-2px);
@@ -160,42 +159,58 @@ const Button = styled.button`
   }
 `;
 
+const AvailabilityContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin: 20px;
+  gap: 10px;
+`;
+
 const DayBox = styled.div`
-  padding: 1.5rem;
-  border-radius: 12px;
+  flex: 1;
+  padding: 20px;
+  border-radius: 8px;
   text-align: center;
-  background: ${props => props.available ? 
-    'linear-gradient(135deg, #1B1B3A10, #2D2D5B10)' : 
-    'linear-gradient(135deg, #ffd70010, #ffd70020)'};
-  border: 2px solid ${props => props.available ? '#1B1B3A' : '#ffd700'};
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 600;
-  color: ${props => props.available ? '#1B1B3A' : '#b3a200'};
+  background: ${({ available }) => (available ? '#e0e0e0' : '#f8f9fa')};
+  border: 2px solid ${({ available }) => (available ? '#1B1B3A' : '#ffd700')};
+  color: ${({ available }) => (available ? '#1B1B3A' : '#b3a200')};
+  transition: background 0.3s ease;
+  cursor: ${({ isEditing }) => (isEditing ? 'pointer' : 'default')};
 
   &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background: ${({ available }) => (available ? '#d0d0d0' : '#f0f0f0')};
   }
 `;
 
 const ProfileSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+  margin-bottom: 20px;
 `;
 
-const Input = styled.input`
-  padding: 0.8rem 1rem;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  width: 100%;
-  transition: all 0.3s ease;
+const ProfileField = styled.div`
+  margin-bottom: 15px;
 
-  &:focus {
-    border-color: #1B1B3A;
-    box-shadow: 0 0 0 3px rgba(27, 27, 58, 0.1);
-    outline: none;
+  label {
+    display: block;
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 5px;
+  }
+
+  input, textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid ${props => props.isEditing ? '#1A1B4B' : '#ddd'};
+    border-radius: 8px;
+    font-size: 16px;
+    background: ${props => props.isEditing ? 'white' : '#f8f9fa'};
+    ${props => !props.isEditing && 'pointer-events: none;'}
+  }
+
+  textarea {
+    height: 100px;
+    resize: none;
+    overflow-y: auto;
+    font-family: sans-serif;
   }
 `;
 
@@ -212,7 +227,7 @@ const Modal = styled.div`
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -220,22 +235,21 @@ const Modal = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background: white;
-  padding: 2rem;
-  border-radius: 16px;
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
   width: 90%;
   max-width: 500px;
   position: relative;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 `;
 
 const CloseButton = styled.button`
   position: absolute;
-  top: 10px;
   right: 10px;
+  top: 10px;
   background: none;
   border: none;
-  font-size: 20px;
+  font-size: 24px;
   cursor: pointer;
   color: #666;
   
@@ -267,47 +281,122 @@ const NavIcons = {
   sessions: '/assets/icons/dumbbell.svg'
 };
 
+const Input = styled.input`
+  padding: 0.8rem 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  width: 100%;
+  transition: all 0.3s ease;
+
+  &:focus {
+    border-color: #1B1B3A;
+    box-shadow: 0 0 0 3px rgba(27, 27, 58, 0.1);
+    outline: none;
+  }
+`;
+
+const SessionList = styled.div`
+  margin-top: 20px;
+`;
+
+
+const SessionInfo = styled.div`
+  flex: 1;
+`;
+
+const SessionActions = styled.div`
+  display: flex;
+  gap: 10px;
+`;
+
+const EditButton = styled(Button)`
+  background: linear-gradient(120deg, #1B1B3A, #2D2D5B);
+  padding: 8px 16px;
+  
+  &:hover {
+    background: linear-gradient(120deg, #1B1B3A, #2D2D5B);
+  }
+`;
+
 const TrainerDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [profile, setProfile] = useState({
-    name: 'Trainer User',
-    email: 'trainer@example.com',
-    speciality: 'Weight Training',
+    name: '',
+    email: '',
+    speciality: '',
     experience: '5 years',
-    bio: 'Certified personal trainer with expertise in strength training.'
+    bio: 'Passionate about fitness and helping others achieve their goals.'
   });
-
-  const [availability, setAvailability] = useState({
-    Monday: true,
-    Tuesday: true,
-    Wednesday: true,
-    Thursday: true,
-    Friday: true,
-    Saturday: false,
-    Sunday: false
-  });
-
-  const [sessions, setSessions] = useState([
-    {
-      id: 1,
-      title: 'Weight Training 101',
-      time: '09:00 AM',
-      duration: '1 hour',
-      capacity: 5,
-      enrolled: 3
-    }
-  ]);
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingSession, setEditingSession] = useState(null);
-  const [sessionForm, setSessionForm] = useState({
+  const [isEditing, setIsEditing] = useState(false);
+  const [availability, setAvailability] = useState("0000000");
+  const [isEditingAvailability, setIsEditingAvailability] = useState(false);
+  const [sessionDetails, setSessionDetails] = useState({
     title: '',
+    date: '',
     time: '',
-    duration: '',
     capacity: '',
     description: ''
   });
+
+  const [sessions, setSessions] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState(null);
+  const [registeredMembers, setRegisteredMembers] = useState([]);
+  const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false); // State for the members modal
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/trainers/profile`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('trainerToken')}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile');
+        }
+
+        const data = await response.json();
+        setProfile(prevProfile => ({
+          ...prevProfile,
+          ...data.trainer
+        }));
+        setAvailability(data.trainer.availability || "0000000");
+      } catch (error) {
+        toast.error(error.message);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  useEffect(() => {
+    fetchSessions();
+  }, []);
+
+  const fetchSessions = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/trainers/sessions`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('trainerToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch sessions');
+      }
+
+      const data = await response.json();
+      setSessions(data);
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('trainerData');
@@ -315,66 +404,280 @@ const TrainerDashboard = () => {
     navigate('/role-selection');
   };
 
-  const handleProfileUpdate = () => {
+  const handleEditToggle = () => {
+    setIsEditing(!isEditing);
+  };
+
+  const handleSaveChanges = async () => {
+    setIsEditing(false);
     toast.success('Profile updated successfully!');
   };
 
-  const toggleAvailability = (day) => {
-    setAvailability(prev => ({
-      ...prev,
-      [day]: !prev[day]
-    }));
-    toast.success(`Availability updated for ${day}`);
+  const handleAvailabilityChange = (dayIndex) => {
+    const availabilityArray = availability.split('');
+    availabilityArray[dayIndex] = availabilityArray[dayIndex] === '1' ? '0' : '1';
+    setAvailability(availabilityArray.join(''));
   };
 
-  const openEditModal = (session) => {
-    setEditingSession(session);
-    setSessionForm({
-      title: session.title,
-      time: session.time,
-      duration: session.duration,
-      capacity: session.capacity,
-      description: session.description || ''
-    });
-    setIsModalOpen(true);
-  };
+  const handleSaveAvailability = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/trainers/availability`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('trainerToken')}`
+        },
+        body: JSON.stringify({ availability })
+      });
 
-  const handleSessionSubmit = (e) => {
-    e.preventDefault();
-    
-    if (editingSession) {
-      // Update existing session
-      setSessions(sessions.map(session => 
-        session.id === editingSession.id 
-          ? { ...session, ...sessionForm }
-          : session
-      ));
-      toast.success('Session updated successfully!');
-    } else {
-      // Add new session
-      const newSession = {
-        id: sessions.length + 1,
-        ...sessionForm,
-        enrolled: 0
-      };
-      setSessions([...sessions, newSession]);
-      toast.success('New session added successfully!');
+      if (!response.ok) {
+        throw new Error('Failed to update availability');
+      }
+
+      toast.success('Availability updated successfully!');
+      setIsEditingAvailability(false);
+    } catch (error) {
+      toast.error(error.message);
     }
-    
-    setIsModalOpen(false);
-    setEditingSession(null);
   };
 
-  const addNewSession = () => {
-    setEditingSession(null);
-    setSessionForm({
-      title: '',
-      time: '',
-      duration: '',
-      capacity: '',
-      description: ''
+  const handleEditSession = (session) => {
+    const scheduleDate = new Date(session.schedule);
+    const date = scheduleDate.toISOString().split('T')[0];
+    const time = scheduleDate.toTimeString().slice(0, 5);
+
+    setEditingSession(session);
+    setSessionDetails({
+      title: session.sessionName,
+      date,
+      time,
+      capacity: session.capacity.toString(),
+      description: session.description
     });
     setIsModalOpen(true);
+  };
+
+  const handleSessionSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!sessionDetails.date || !sessionDetails.time) {
+      toast.error('Please select both date and time');
+      return;
+    }
+
+    const sessionData = {
+      sessionName: sessionDetails.title,
+      schedule: `${sessionDetails.date}T${sessionDetails.time}:00.000Z`,
+      capacity: parseInt(sessionDetails.capacity),
+      description: sessionDetails.description
+    };
+
+    try {
+      const url = editingSession 
+        ? `${API_BASE_URL}/sessions/update/${editingSession.id}`
+        : `${API_BASE_URL}/sessions/`;
+
+      const method = editingSession ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('trainerToken')}`
+        },
+        body: JSON.stringify(sessionData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to ${editingSession ? 'update' : 'add'} session`);
+      }
+
+      toast.success(`Session ${editingSession ? 'updated' : 'added'} successfully!`);
+      setIsModalOpen(false);
+      setEditingSession(null);
+      setSessionDetails({ 
+        title: '', 
+        date: '', 
+        time: '', 
+        capacity: '', 
+        description: '' 
+      });
+      fetchSessions();
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const fetchRegisteredMembers = async (sessionId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/members`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('trainerToken')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch registered members');
+      }
+
+      const data = await response.json();
+      setRegisteredMembers(data);
+      setSelectedSessionId(sessionId);
+      setIsMembersModalOpen(true); // Open the modal after fetching members
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const renderRegisteredMembersModal = () => {
+    return (
+      <Modal>
+        <ModalContent>
+          <CloseButton onClick={() => setIsMembersModalOpen(false)}>×</CloseButton>
+          <h3>Registered Members</h3>
+          {registeredMembers.length === 0 ? ( // Check if there are no registered members
+            <p style={{ margin: '20px 0' }}>No members registered for this session.</p>
+          ) : (
+            <ul>
+              {registeredMembers.map(member => (
+                <li key={member.id}>
+                  {member.name} - {member.email}
+                </li>
+              ))}
+            </ul>
+          )}
+        </ModalContent>
+      </Modal>
+    );
+  };
+
+  const renderSessionList = () => {
+    const now = new Date();
+
+    return (
+      <SessionList>
+        {sessions.map(session => {
+          const sessionDate = new Date(session.schedule);
+          const isUpcoming = sessionDate > now;
+
+          return (
+            <SessionCard key={session.id}>
+              <SessionInfo>
+                <h3>{session.sessionName}</h3>
+                <p>Date: {new Date(session.schedule).toLocaleDateString()}</p>
+                <p>Time: {new Date(session.schedule).toLocaleTimeString()}</p>
+                <p>Capacity: {session.capacity}</p>
+                <p>Description: {session.description}</p>
+              </SessionInfo>
+              {isUpcoming && (
+                <SessionActions>
+                  <EditButton onClick={() => handleEditSession(session)}>
+                    Edit
+                  </EditButton>
+                  <Button onClick={() => fetchRegisteredMembers(session.id)}>
+                    View Members
+                  </Button>
+                </SessionActions>
+              )}
+            </SessionCard>
+          );
+        })}
+      </SessionList>
+    );
+  };
+
+  const renderSessionForm = () => {
+    return (
+      <div>
+        <h2>Training Sessions</h2>
+        <Button onClick={() => {
+          setEditingSession(null);
+          setSessionDetails({ title: '', date: '', time: '', capacity: '', description: '' });
+          setIsModalOpen(true);
+        }}>
+          Add New Session
+        </Button>
+
+        {renderSessionList()}
+
+        {isModalOpen && (
+          <Modal>
+            <ModalContent>
+              <CloseButton onClick={() => {
+                setIsModalOpen(false);
+                setEditingSession(null);
+              }}>×</CloseButton>
+              <h2>{editingSession ? 'Edit Session' : 'Add New Session'}</h2>
+              
+              <form onSubmit={handleSessionSubmit}>
+                <FormGroup>
+                  <label>Session Title</label>
+                  <Input
+                    type="text"
+                    value={sessionDetails.title}
+                    onChange={(e) => setSessionDetails({...sessionDetails, title: e.target.value})}
+                    required
+                  />
+                </FormGroup>
+
+                <FormGroup>
+                  <label>Date</label>
+                  <Input
+                    type="date"
+                    value={sessionDetails.date}
+                    onChange={(e) => setSessionDetails({...sessionDetails, date: e.target.value})}
+                    required
+                  />
+                </FormGroup>
+
+                <FormGroup>
+                  <label>Time</label>
+                  <Input
+                    type="time"
+                    value={sessionDetails.time}
+                    onChange={(e) => setSessionDetails({...sessionDetails, time: e.target.value})}
+                    required
+                  />
+                </FormGroup>
+
+                <FormGroup>
+                  <label>Capacity</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={sessionDetails.capacity}
+                    onChange={(e) => setSessionDetails({...sessionDetails, capacity: e.target.value})}
+                    required
+                  />
+                </FormGroup>
+
+                <FormGroup>
+                  <label>Description</label>
+                  <textarea
+                    value={sessionDetails.description}
+                    onChange={(e) => setSessionDetails({...sessionDetails, description: e.target.value})}
+                    style={{ 
+                      width: '100%', 
+                      padding: '10px', 
+                      borderRadius: '5px', 
+                      border: '1px solid #ddd',
+                      minHeight: '100px'
+                    }}
+                  />
+                </FormGroup>
+
+                <Button type="submit">
+                  {editingSession ? 'Update Session' : 'Add Session'}
+                </Button>
+              </form>
+            </ModalContent>
+          </Modal>
+        )}
+
+        {isMembersModalOpen && renderRegisteredMembersModal()} {/* Render the members modal */}
+      </div>
+    );
   };
 
   const renderContent = () => {
@@ -383,151 +686,81 @@ const TrainerDashboard = () => {
         return (
           <ProfileSection>
             <h2>Profile Information</h2>
-            <Input 
-              type="text" 
-              value={profile.name} 
-              onChange={e => setProfile({...profile, name: e.target.value})}
-              placeholder="Name"
-            />
-            <Input 
-              type="email" 
-              value={profile.email} 
-              onChange={e => setProfile({...profile, email: e.target.value})}
-              placeholder="Email"
-            />
-            <Input 
-              type="text" 
-              value={profile.speciality} 
-              onChange={e => setProfile({...profile, speciality: e.target.value})}
-              placeholder="Speciality"
-            />
-            <Input 
-              type="text" 
-              value={profile.experience} 
-              onChange={e => setProfile({...profile, experience: e.target.value})}
-              placeholder="Experience"
-            />
-            <textarea 
-              value={profile.bio} 
-              onChange={e => setProfile({...profile, bio: e.target.value})}
-              placeholder="Bio"
-              style={{ padding: '10px', borderRadius: '5px', border: '1px solid #ddd' }}
-            />
-            <Button onClick={handleProfileUpdate}>Update Profile</Button>
+            <ProfileField isEditing={isEditing}>
+              <label>Name:</label>
+              <input 
+                type="text" 
+                value={profile.name} 
+                onChange={e => setProfile({...profile, name: e.target.value})}
+                disabled={!isEditing}
+              />
+            </ProfileField>
+            <ProfileField isEditing={isEditing}>
+              <label>Email:</label>
+              <input 
+                type="email" 
+                value={profile.email} 
+                onChange={e => setProfile({...profile, email: e.target.value})}
+                disabled={!isEditing}
+              />
+            </ProfileField>
+            <ProfileField isEditing={isEditing}>
+              <label>Speciality:</label>
+              <input 
+                type="text" 
+                value={profile.speciality} 
+                onChange={e => setProfile({...profile, speciality: e.target.value})}
+                disabled={!isEditing}
+              />
+            </ProfileField>
+            <ProfileField isEditing={isEditing}>
+              <label>Experience:</label>
+              <input 
+                type="text" 
+                value={profile.experience} 
+                onChange={e => setProfile({...profile, experience: e.target.value})}
+                disabled={!isEditing}
+              />
+            </ProfileField>
+            <ProfileField isEditing={isEditing}>
+              <label>Bio:</label>
+              <textarea 
+                value={profile.bio} 
+                onChange={e => setProfile({...profile, bio: e.target.value})}
+                disabled={!isEditing}
+                rows="3"
+              />
+            </ProfileField>
+            <Button onClick={isEditing ? handleSaveChanges : handleEditToggle}>
+              {isEditing ? 'Save Changes' : 'Edit Profile'}
+            </Button>
           </ProfileSection>
         );
 
       case 'availability':
         return (
-          <div>
-            <h2>Availability</h2>
-            <AvailabilityGrid>
-              {Object.entries(availability).map(([day, available]) => (
-                <DayBox 
-                  key={day} 
-                  available={available}
-                  onClick={() => toggleAvailability(day)}
+          <ProfileSection>
+            <h2>Weekly Availability</h2>
+            <AvailabilityContainer>
+              {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day, index) => (
+                <DayBox
+                  key={day}
+                  available={availability[index] === '1'}
+                  isEditing={isEditingAvailability}
+                  onClick={isEditingAvailability ? () => handleAvailabilityChange(index) : undefined}
                 >
-                  {day}
-                  <br />
-                  {available ? 'Available' : 'Unavailable'}
+                  {day}  {availability[index] === '1' ? 'Available' : 'Unavailable'}
                 </DayBox>
               ))}
-            </AvailabilityGrid>
-          </div>
+            </AvailabilityContainer>
+            <Button onClick={isEditingAvailability ? handleSaveAvailability : () => setIsEditingAvailability(true)}>
+              {isEditingAvailability ? 'Save' : 'Edit'}
+            </Button>
+          </ProfileSection>
         );
 
       case 'sessions':
-        return (
-          <div>
-            <h2>Training Sessions</h2>
-            <Button onClick={addNewSession}>Add New Session</Button>
-            {sessions.map(session => (
-              <SessionCard key={session.id}>
-                <h3>{session.title}</h3>
-                <p>Time: {session.time}</p>
-                <p>Duration: {session.duration}</p>
-                <p>Capacity: {session.enrolled}/{session.capacity}</p>
-                <Button onClick={() => openEditModal(session)}>
-                  Edit Session
-                </Button>
-              </SessionCard>
-            ))}
-
-            {isModalOpen && (
-              <Modal>
-                <ModalContent>
-                  <CloseButton onClick={() => setIsModalOpen(false)}>×</CloseButton>
-                  <h2>{editingSession ? 'Edit Session' : 'Add New Session'}</h2>
-                  
-                  <form onSubmit={handleSessionSubmit}>
-                    <FormGroup>
-                      <label>Session Title</label>
-                      <Input
-                        type="text"
-                        value={sessionForm.title}
-                        onChange={e => setSessionForm({...sessionForm, title: e.target.value})}
-                        required
-                      />
-                    </FormGroup>
-
-                    <FormGroup>
-                      <label>Time</label>
-                      <Input
-                        type="time"
-                        value={sessionForm.time}
-                        onChange={e => setSessionForm({...sessionForm, time: e.target.value})}
-                        required
-                      />
-                    </FormGroup>
-
-                    <FormGroup>
-                      <label>Duration (minutes)</label>
-                      <Input
-                        type="number"
-                        min="15"
-                        step="15"
-                        value={sessionForm.duration}
-                        onChange={e => setSessionForm({...sessionForm, duration: e.target.value})}
-                        required
-                      />
-                    </FormGroup>
-
-                    <FormGroup>
-                      <label>Capacity</label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={sessionForm.capacity}
-                        onChange={e => setSessionForm({...sessionForm, capacity: e.target.value})}
-                        required
-                      />
-                    </FormGroup>
-
-                    <FormGroup>
-                      <label>Description</label>
-                      <textarea
-                        value={sessionForm.description}
-                        onChange={e => setSessionForm({...sessionForm, description: e.target.value})}
-                        style={{ 
-                          width: '100%', 
-                          padding: '10px', 
-                          borderRadius: '5px', 
-                          border: '1px solid #ddd',
-                          minHeight: '100px'
-                        }}
-                      />
-                    </FormGroup>
-
-                    <Button type="submit">
-                      {editingSession ? 'Update Session' : 'Add Session'}
-                    </Button>
-                  </form>
-                </ModalContent>
-              </Modal>
-            )}
-          </div>
-        );
+        return renderSessionForm();
 
       default:
         return null;
@@ -537,7 +770,7 @@ const TrainerDashboard = () => {
   return (
     <DashboardContainer>
       <Header>
-        <h1>Trainer Dashboard</h1>
+        <h1>Welcome, Trainer {profile.name}</h1>
         <Button onClick={handleLogout}>Logout</Button>
       </Header>
 

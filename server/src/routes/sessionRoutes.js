@@ -10,6 +10,7 @@ router.post('/', trainerAuth, sessionController.createSession);
 router.put('/update/:sessionId', trainerAuth, sessionController.updateSession);
 router.delete('/delete/:sessionId', trainerAuth, sessionController.deleteSession);
 router.get('/my-sessions', trainerAuth, sessionController.getSessionsByTrainer);
+router.get('/:sessionId/members', trainerAuth, sessionController.getRegisteredMembers);
 
 // Member routes
 router.get('/', memberAuth, sessionController.getAllSessions);

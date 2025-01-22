@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import axios from 'axios';
 import API_BASE_URL from '../../config';
-import {FaEye, FaEyeSlash} from 'react-icons/fa';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const RegisterContainer = styled.div`
   min-height: 100vh;
@@ -50,6 +49,20 @@ const Label = styled.label`
   font-weight: 600;
 `;
 
+const Select = styled.select`
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  background: white;
+  
+  &:focus {
+    outline: none;
+    border-color: #1A1B4B;
+    box-shadow: 0 0 0 2px rgba(26, 27, 75, 0.1);
+  }
+`;
+
 const Input = styled.input`
   padding: 12px;
   border: 1px solid #ddd;
@@ -61,6 +74,11 @@ const Input = styled.input`
     border-color: #1A1B4B;
     box-shadow: 0 0 0 2px rgba(26, 27, 75, 0.1);
   }
+`;
+
+const OtherSpecialityInput = styled(Input)`
+  margin-top: 10px;
+  display: ${props => props.show ? 'block' : 'none'};
 `;
 
 const Button = styled.button`
@@ -141,67 +159,101 @@ const PasswordInput = styled(Input)`
   padding-right: 40px; // Add padding to the right for the icon
 `;
 
-const MemberRegister = () => {
+const TrainerRegister = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
-  const [showconfirmPassword, setShowconfirmPassword ] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [registerData, setRegisterData] = useState({
     name: '',
-    age: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    age: '',
+    speciality: '',
+    otherSpeciality: ''
   });
 
+  const specialities = [
+    'Weight Training',
+    'Yoga',
+    'CrossFit',
+    'Cardio',
+    'HIIT',
+    'Pilates',
+    'Functional Training',
+    'Bodybuilding',
+    'Zumba',
+    'Martial Arts',
+    'Others'
+  ];
+
+  const handleSpecialityChange = (e) => {
+    const value = e.target.value;
+    setRegisterData({
+      ...registerData,
+      speciality: value,
+      otherSpeciality: value !== 'Others' ? '' : registerData.otherSpeciality
+    });
+  };
 
   const handleRegister = async (e) => {
-    
-      e.preventDefault();
-  
-      // Validation
-      if (!registerData.name || !registerData.age || !registerData.email || !registerData.password || !registerData.confirmPassword) {
-        toast.error('Please fill in all fields');
-        return;
-      }
-  
-      if (registerData.password !== registerData.confirmPassword) {
-        toast.error('Passwords do not match');
-        return;
-      }
-  
-      if (parseInt(registerData.age) < 16) {
-        toast.error('You must be at least 16 years old to register');
-        return;
-      }
-  
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(registerData.email)) {
-        toast.error('Please enter a valid email address');
-        return;
-      }
-  
-      try {
-        // Make API call to register the member
-        const registrationData = {
-          ...registerData,
-          age: parseInt(registerData.age) // Convert age to an integer
-        };
-  
-        const response = await axios.post(`${API_BASE_URL}/members/register`, registrationData, {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-  
-        await 
-        
-  
-        toast.success('Registration successful! Redirecting to Login...');
-        navigate('/member/login');
-      } catch (error) {
-        toast.error(error.response?.data?.message || 'Registration failed. Please try again.');
-      }
+    e.preventDefault();
+
+    // Basic validation
+    if (!registerData.name || !registerData.email || !registerData.password || !registerData.confirmPassword || !registerData.age || !registerData.speciality) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    // Password match validation
+    if (registerData.password !== registerData.confirmPassword) {
+      toast.error('Passwords do not match!');
+      return;
+    }
+
+    // Validate speciality
+    if (registerData.speciality === 'Others' && !registerData.otherSpeciality) {
+      toast.error('Please specify your speciality');
+      return;
+    }
+
+    // Get the final speciality value
+    const finalSpeciality = registerData.speciality === 'Others' 
+      ? registerData.otherSpeciality 
+      : registerData.speciality;
+
+    // Create the data to send, excluding confirmPassword
+    const dataToSubmit = {
+      name: registerData.name,
+      email: registerData.email,
+      password: registerData.password, // Only send password
+      age: parseInt(registerData.age),
+      speciality: finalSpeciality
     };
+
+    try {
+      // Call the API to register the trainer
+      const response = await fetch(`${API_BASE_URL}/trainers/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSubmit),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed. Please try again.');
+      }
+
+      toast.success('Registration successful! Redirecting to Login...');
+      navigate('/trainer/login');
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
   return (
     <RegisterContainer>
@@ -218,16 +270,6 @@ const MemberRegister = () => {
             />
           </InputGroup>
           <InputGroup>
-              <Label>Age</Label>
-              <Input
-                type="number"
-                value={registerData.age}
-                onChange={(e) => setRegisterData({...registerData, age: e.target.value})}
-                min="16"
-                required
-              />
-            </InputGroup>
-          <InputGroup>
             <Label>Email</Label>
             <Input
               type="email"
@@ -236,8 +278,9 @@ const MemberRegister = () => {
               required
             />
           </InputGroup>
+
           <InputGroup>
-            <Label>Password</Label>
+            <Label>Create Password</Label>
             <PasswordInput
               type={showPassword ? "text" : "password"}
               value={registerData.password}
@@ -248,22 +291,62 @@ const MemberRegister = () => {
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </IconButton>
           </InputGroup>
+
           <InputGroup>
             <Label>Confirm Password</Label>
             <PasswordInput
-              type={showconfirmPassword ? "text" : "password"}
+              type={showConfirmPassword ? "text" : "password"}
               value={registerData.confirmPassword}
               onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
               required
             />
-            <IconButton onClick={() => setShowconfirmPassword(!showconfirmPassword)} type="button">
-              {showconfirmPassword ? <FaEyeSlash /> : <FaEye />}
+            <IconButton onClick={() => setShowConfirmPassword(!showConfirmPassword)} type="button">
+              {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
             </IconButton>
+          </InputGroup>
+
+          <InputGroup>
+            <Label>Age</Label>
+            <Input
+              type="number"
+              value={registerData.age}
+              onChange={(e) => setRegisterData({ ...registerData, age: e.target.value })}
+              required
+              min="18"
+              max="100"
+            />
+          </InputGroup>
+
+          <InputGroup>
+            <Label>Speciality</Label>
+            <Select
+              value={registerData.speciality}
+              onChange={handleSpecialityChange}
+              required
+            >
+              <option value="">Select your speciality</option>
+              {specialities.map((speciality) => (
+                <option key={speciality} value={speciality}>
+                  {speciality}
+                </option>
+              ))}
+            </Select>
+
+            <OtherSpecialityInput
+              show={registerData.speciality === 'Others'}
+              type="text"
+              placeholder="Please specify your speciality"
+              value={registerData.otherSpeciality}
+              onChange={(e) => setRegisterData({
+                ...registerData,
+                otherSpeciality: e.target.value
+              })}
+              required={registerData.speciality === 'Others'}
+            />
           </InputGroup>
           <Button type="submit">Register</Button>
         </Form>
-        
-        <LoginButton onClick={() => navigate('/member/login')}>Already have an account? Login</LoginButton>
+        <LoginButton onClick={() => navigate('/trainer/login')}>Already have an account? Login</LoginButton>
         <BackButton onClick={() => navigate('/role-selection')}>
           ← Back to Role Selection
         </BackButton>
@@ -272,4 +355,4 @@ const MemberRegister = () => {
   );
 };
 
-export default MemberRegister;
+export default TrainerRegister;

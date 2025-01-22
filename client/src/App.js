@@ -18,6 +18,7 @@ import RegisterAdmin from './pages/AdminProfile/RegisterAdmin';
 // Client-side imports
 import CSPLanding from './pages/ClientSide/CSPLanding';
 import TrainerLogin from './pages/TrainerSide/TrainerLogin';
+import TrainerReg from './pages/TrainerSide/TrainerReg';
 import RoleSelection from './pages/RoleSelection';
 import TrainerDashboard from './pages/TrainerSide/TrainerDashboard';
 import MemberLogin from './pages/MemberSide/MemberLogin';
@@ -54,6 +55,7 @@ function App() {
 
         {/* Trainer Routes */}
         <Route path="/trainer/login" element={<TrainerLogin />} />
+        <Route path="/trainer/register" element={<TrainerReg/>} />
         <Route path="/trainer/dashboard" element={<TrainerDashboard />  } />   
       </Routes>
       <ToastContainer position="top-right" autoClose={3000} />
