@@ -522,6 +522,7 @@ const MemberDashboard = () => {
   const [attendedSessions, setAttendedSessions] = useState([]);
   const [profileData, setProfileData] = useState(false);
   const [visibleSessions, setVisibleSessions] = useState(3); // State to control the number of visible sessions
+  const [visibleAttendedSessions, setVisibleAttendedSessions] = useState(3); // State for visible attended sessions
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -615,6 +616,7 @@ const MemberDashboard = () => {
 
   const handleSessionClick = (session) => {
     setSelectedSession(session);
+    // console.log('Selected session:', session);
     setShowModal(true);
   };
 
@@ -626,6 +628,10 @@ const MemberDashboard = () => {
   
   const handleShowMore = () => {
     setVisibleSessions((prev) => prev + 3); // Show three more sessions
+  };
+
+  const handleShowMoreAttended = () => {
+    setVisibleAttendedSessions((prev) => prev + 3); // Show three more attended sessions
   };
 
   const calculateProgress = (startDate, endDate) => {
@@ -703,6 +709,27 @@ const MemberDashboard = () => {
       ...prev,
       [field]: value
     }));
+  };
+  const handleJoinSession = async (sessionId) => {
+    console.log('Joining session with ID:', sessionId);
+    try {
+      const token = localStorage.getItem('memberToken');
+      console.log('Token:', token);
+      const response = await axios.post(`${API_BASE_URL}/sessions/${sessionId}/book`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      console.log('Session booked successfully:', response.data);
+      toast.success('You have successfully joined the session!');
+      // setAttendedSessions(prev => [...prev, response.data]);
+
+      // Close the modal after joining the session
+      closeModal();
+    } catch (error) {
+      console.error('Error joining session:', error);
+      toast.error('Failed to join the session. Please try again.');
+    }
   };
 
   return (
@@ -833,7 +860,7 @@ const MemberDashboard = () => {
             <ModalText><strong>Description:</strong> {selectedSession.description}</ModalText>
             {/* Only show Join button for upcoming sessions */}
             { !attendedSessions.some(attended => attended.id === selectedSession.id) && (
-              <JoinButton>Join</JoinButton>
+              <JoinButton onClick={() => handleJoinSession(selectedSession.id)}>Join</JoinButton>
             )}
           </StyledModalContent>
         </StyledModal>
@@ -845,16 +872,19 @@ const MemberDashboard = () => {
           <p>You have not attended any sessions</p>
         ) : (
           <UpcomingClassList>
-            {attendedSessions.map(session => (
+            {attendedSessions.slice(0, visibleAttendedSessions).map(session => (
               <ClassItem key={session.id} onClick={() => handleSessionClick(session)}>
                 <div className="class-info">
                   <h3 style={{ cursor: 'pointer' }}>{session.sessionName}</h3>
                   <p>{new Date(session.schedule).toLocaleString()}</p>
                 </div>
-                <StatusTag>Completed</StatusTag>
+                {new Date(session.schedule) < new Date() && <StatusTag>Completed</StatusTag>}
               </ClassItem>
             ))}
           </UpcomingClassList>
+        )}
+        {visibleAttendedSessions < attendedSessions.length && (
+          <ShowMoreButton onClick={handleShowMoreAttended}>Show More</ShowMoreButton>
         )}
       </Card>
 
@@ -869,7 +899,7 @@ const MemberDashboard = () => {
             <ModalText><strong>Description:</strong> {selectedSession.description}</ModalText>
             {/* Only show Join button for upcoming sessions */}
             { !attendedSessions.some(attended => attended.id === selectedSession.id) && (
-              <JoinButton>Join</JoinButton>
+              <JoinButton onClick={() => handleJoinSession(selectedSession.id)}>Join</JoinButton>
             )}
           </StyledModalContent>
         </StyledModal>

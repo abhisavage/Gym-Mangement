@@ -140,7 +140,7 @@ const BuyPlan = () => {
           <PlanCard key={plan.id}>
             <div>
             <PlanTitle>{plan.planName}</PlanTitle>
-            <PlanPrice>₹{plan.cost}</PlanPrice> {/* Assuming cost is in rupees */}
+            <PlanPrice>₹{plan.cost}</PlanPrice> 
             </div>
             <PlanFeatures>
               {plan.features.map((feature, index) => (
