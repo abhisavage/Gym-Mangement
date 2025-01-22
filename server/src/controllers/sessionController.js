@@ -213,13 +213,12 @@ const sessionController = {
           id: registration.id,
           sessionDetails: {
             id: registration.session.id,
-            title: registration.session.title,
+            sessionName: registration.session.sessionName,
             description: registration.session.description,
-            duration: registration.session.duration,
+            schedule: registration.session.schedule,
+            capacity: registration.session.capacity,
             trainer: registration.session.trainer
-          },
-          status: registration.status,
-          bookingDate: registration.createdAt
+          }
         }
       });
 

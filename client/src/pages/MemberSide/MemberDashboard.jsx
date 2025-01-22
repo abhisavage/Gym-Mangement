@@ -635,18 +635,14 @@ const MemberDashboard = () => {
   };
 
   const calculateProgress = (startDate, endDate) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const now = new Date();
-
-    if (now < start) return 0; // No progress if the membership hasn't started
-    if (now > end) return 100; // Full progress if the membership has ended
-
-    const totalDuration = end - start; // Total duration in milliseconds
-    const elapsedDuration = now - start; // Elapsed duration in milliseconds
-    const progress = (elapsedDuration / totalDuration) * 100; // Calculate progress percentage
-
-    return Math.min(Math.max(progress, 0), 100); // Ensure progress is between 0 and 100
+    const totalDays = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24));
+    const currentDate = new Date();
+    const remainingDays = Math.ceil((new Date(endDate) - currentDate) / (1000 * 60 * 60 * 24));
+  
+    // Calculate progress based on remaining days
+    const progress = remainingDays >= 0 ? (remainingDays / totalDays) * 100 : 0;
+  
+    return Math.min(progress, 100); // Ensure progress does not exceed 100%
   };
 
   // Function to calculate remaining days
@@ -663,29 +659,47 @@ const MemberDashboard = () => {
     e.preventDefault(); // Prevent default form submission
 
     try {
-      const token = localStorage.getItem('memberToken');
-      const currentDate = new Date(); // Get the current date and time
-      const response = await axios.post(`${API_BASE_URL}/equipment/usage`, {
-        equipmentId: selectedEquipment, // Use the selected equipment ID
-        duration: parseInt(duration, 10), // Convert duration to integer before sending
-        date: currentDate.toISOString(),// Send date only
-        time: currentDate.toISOString() // Send time only
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+        const token = localStorage.getItem('memberToken');
+        const currentDate = new Date(); // Get the current date and time
+        const response = await axios.post(`${API_BASE_URL}/equipment/usage`, {
+            equipmentId: selectedEquipment, // Use the selected equipment ID
+            duration: parseInt(duration, 10), // Convert duration to integer before sending
+            date: currentDate.toISOString(), // Send date only
+            time: currentDate.toISOString() // Send time only
+        }, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
 
-      // Handle successful response
-      console.log('Usage recorded successfully:', response.data);
-      // Optionally reset the form or update the UI
-      setSelectedEquipment('');
-      setDuration('');
-      setUsageDate('');
-      setUsageTime('');
+        // Handle successful response
+        console.log('Usage recorded successfully:', response.data);
+        
+        // Convert the response to the desired format
+        const newUsage = {
+            id: response.data.usage.id, // Usage ID from the response
+            memberId: response.data.usage.memberId, // Member ID from the response
+            equipmentId: response.data.usage.equipmentId, // Equipment ID from the response
+            date: response.data.usage.date, // Date from the response
+            time: response.data.usage.time, // Time from the response
+            duration: response.data.usage.duration, // Duration from the response
+            equipment: {
+                name: response.data.equipment.name, // Equipment name from the response
+                category: response.data.equipment.category // Equipment category from the response
+            }
+        };
+
+        // Update recent usages state with the new usage
+        setRecentUsages(prevUsages => [newUsage, ...prevUsages]);
+
+        // Optionally reset the form or update the UI
+        setSelectedEquipment('');
+        setDuration('');
+        setUsageDate('');
+        setUsageTime('');
     } catch (error) {
-      console.error('Error recording equipment usage:', error);
-      // Handle error (e.g., show a notification)
+        console.error('Error recording equipment usage:', error);
+        // Handle error (e.g., show a notification)
     }
   };
 
@@ -722,7 +736,7 @@ const MemberDashboard = () => {
       });
       console.log('Session booked successfully:', response.data);
       toast.success('You have successfully joined the session!');
-      // setAttendedSessions(prev => [...prev, response.data]);
+      setAttendedSessions(prev => [response.data.registration.sessionDetails, ...prev]);
 
       // Close the modal after joining the session
       closeModal();

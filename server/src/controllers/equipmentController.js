@@ -84,9 +84,14 @@ const equipmentController = {
         }
       });
 
+      const equipmentData = await prisma.equipment.findUnique({
+        where: { id: equipmentId }
+      });
+
       res.status(201).json({
         message: 'Usage recorded successfully',
-        usage
+        usage,
+        equipment: equipmentData
       });
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
