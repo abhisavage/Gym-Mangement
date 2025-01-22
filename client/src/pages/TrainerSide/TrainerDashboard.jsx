@@ -575,16 +575,16 @@ const TrainerDashboard = () => {
                 <p>Capacity: {session.capacity}</p>
                 <p>Description: {session.description}</p>
               </SessionInfo>
-              {isUpcoming && (
                 <SessionActions>
+                {isUpcoming && (
                   <EditButton onClick={() => handleEditSession(session)}>
                     Edit
                   </EditButton>
+                )}
                   <Button onClick={() => fetchRegisteredMembers(session.id)}>
                     View Members
                   </Button>
                 </SessionActions>
-              )}
             </SessionCard>
           );
         })}
