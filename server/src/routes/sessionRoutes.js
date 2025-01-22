@@ -15,6 +15,8 @@ router.get('/:sessionId/members', trainerAuth, sessionController.getRegisteredMe
 // Member routes
 router.get('/', memberAuth, sessionController.getAllSessions);
 router.post('/:sessionId/book', memberAuth, sessionController.bookSession);
+router.post('/:sessionId/feedback', memberAuth, sessionController.addFeedback);
+router.get('/:sessionId/feedback', memberAuth, sessionController.getFeedback);
 
 // Public routes
 router.get('/available', sessionController.getAvailableSessions);

@@ -408,10 +408,10 @@ const ProfileField = styled.div`
 `;
 
 const SaveButton = styled(EditButton)`
-  background: #28a745;
+  background: #1A1B4B;
   
   &:hover {
-    background: #218838;
+    background: #1A1B4B;
   }
 `;
 
@@ -504,9 +504,42 @@ const PlanButton = styled.div`
   right: 20px; // Position it to the right
 `;
 
+const FeedbackButton = styled(Button)`
+  margin-top: 15px;
+  background: #1A1B4B;
+  
+  &:hover {
+    background: #1A1B4B;
+  }
+`;
+
+const FeedbackTextArea = styled.textarea`
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-top: 15px;
+  height: 150px; /* Fixed height */
+  font-size: 16px;
+  overflow-y: auto; /* Enable vertical scrolling */
+  resize: none;
+  &:focus {
+    outline: none;
+    border-color: #1A1B4B;
+  }
+`;
+
+const SubmittedFeedback = styled.div`
+  margin-top: 15px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #666;
+`;
+
 const MemberDashboard = () => {
   const navigate = useNavigate();
-  const memberName = JSON.parse(localStorage.getItem('memberData')).member.name; // This retrieves the name from localStorage
+  const memberName = JSON.parse(localStorage.getItem('memberData')).member.name; // This retrieves the name from localStorage
   const [selectedEquipment, setSelectedEquipment] = useState('');
   const [duration, setDuration] = useState('');
   const [usageHistory, setUsageHistory] = useState([]);
@@ -523,6 +556,9 @@ const MemberDashboard = () => {
   const [profileData, setProfileData] = useState(false);
   const [visibleSessions, setVisibleSessions] = useState(3); // State to control the number of visible sessions
   const [visibleAttendedSessions, setVisibleAttendedSessions] = useState(3); // State for visible attended sessions
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  const [sessionFeedbacks, setSessionFeedbacks] = useState({});
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -616,14 +652,17 @@ const MemberDashboard = () => {
 
   const handleSessionClick = (session) => {
     setSelectedSession(session);
-    // console.log('Selected session:', session);
     setShowModal(true);
+    if (attendedSessions.some(attended => attended.id === session.id)) {
+      fetchSessionFeedback(session.id);
+    }
   };
 
-  // Function to close the modal
   const closeModal = () => {
     setShowModal(false);
     setSelectedSession(null);
+    setShowFeedbackForm(false);
+    setFeedback('');
   };
   
   const handleShowMore = () => {
@@ -744,6 +783,60 @@ const MemberDashboard = () => {
       console.error('Error joining session:', error);
       toast.error('Failed to join the session. Please try again.');
     }
+  };
+
+  const fetchSessionFeedback = async (sessionId) => {
+    try {
+      const token = localStorage.getItem('memberToken');
+      const response = await axios.get(`${API_BASE_URL}/sessions/${sessionId}/feedback`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      setSessionFeedbacks(prev => ({
+        ...prev,
+        [sessionId]: response.data.feedback
+      }));
+    } catch (error) {
+      console.error('Error fetching feedback:', error);
+      if (error.response?.status !== 404) { // Ignore 404 errors as they just mean no feedback yet
+        toast.error('Error fetching feedback');
+      }
+    }
+  };
+
+  const handleFeedbackSubmit = async (sessionId) => {
+    try {
+      const token = localStorage.getItem('memberToken');
+      const response = await axios.post(
+        `${API_BASE_URL}/sessions/${sessionId}/feedback`,
+        { feedback },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      
+      // Update the sessionFeedbacks state with the new feedback
+      setSessionFeedbacks(prev => ({
+        ...prev,
+        [sessionId]: response.data.feedback
+      }));
+      
+      toast.success('Feedback submitted successfully!');
+      setShowFeedbackForm(false);
+      setFeedback('');
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      toast.error('Failed to submit feedback. Please try again.');
+    }
+  };
+
+  // Add this helper function to check if a session has already taken place
+  const isSessionCompleted = (sessionSchedule) => {
+    return new Date(sessionSchedule) < new Date();
   };
 
   return (
@@ -872,14 +965,55 @@ const MemberDashboard = () => {
             <ModalText><strong>Trainer:</strong> {selectedSession.trainer.name}</ModalText>
             <ModalText><strong>Capacity:</strong> {selectedSession.capacity}</ModalText>
             <ModalText><strong>Description:</strong> {selectedSession.description}</ModalText>
-            {/* Only show Join button for upcoming sessions */}
-            { !attendedSessions.some(attended => attended.id === selectedSession.id) && (
+            
+            {/* Show Join button for upcoming sessions */}
+            {!attendedSessions.some(attended => attended.id === selectedSession.id) && (
               <JoinButton onClick={() => handleJoinSession(selectedSession.id)}>Join</JoinButton>
+            )}
+
+            {/* Show feedback section only for completed attended sessions */}
+            {attendedSessions.some(attended => attended.id === selectedSession.id) && 
+             isSessionCompleted(selectedSession.schedule) && (
+              <>
+                {sessionFeedbacks[selectedSession.id] ? (
+                  <SubmittedFeedback>
+                    <strong>Your Feedback:</strong>
+                    <p>{sessionFeedbacks[selectedSession.id]}</p>
+                  </SubmittedFeedback>
+                ) : (
+                  <>
+                    {!showFeedbackForm ? (
+                      <FeedbackButton onClick={() => setShowFeedbackForm(true)}>
+                        Add Feedback
+                      </FeedbackButton>
+                    ) : (
+                      <>
+                        <FeedbackTextArea
+                          placeholder="Share your experience about this session..."
+                          value={feedback}
+                          onChange={(e) => setFeedback(e.target.value)}
+                        />
+                        <FeedbackButton onClick={() => handleFeedbackSubmit(selectedSession.id)}>
+                          Save Feedback
+                        </FeedbackButton>
+                      </>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+
+            {/* Show message for upcoming attended sessions */}
+            {attendedSessions.some(attended => attended.id === selectedSession.id) && 
+             !isSessionCompleted(selectedSession.schedule) && (
+              <ModalText style={{ marginTop: '15px', color: '#666' }}>
+                Feedback can be added after the session is completed.
+              </ModalText>
             )}
           </StyledModalContent>
         </StyledModal>
       )}
-        
+      
         <Card>
         <h2>Attended Sessions</h2>
         {attendedSessions.length === 0 ? (
@@ -901,23 +1035,6 @@ const MemberDashboard = () => {
           <ShowMoreButton onClick={handleShowMoreAttended}>Show More</ShowMoreButton>
         )}
       </Card>
-
-      {showModal && selectedSession && (
-        <StyledModal>
-          <StyledModalContent>
-            <CloseModalButton onClick={closeModal}>×</CloseModalButton>
-            <ModalTitle>{selectedSession.sessionName}</ModalTitle>
-            <ModalText><strong>Schedule:</strong> {new Date(selectedSession.schedule).toLocaleString()}</ModalText>
-            <ModalText><strong>Trainer:</strong> {selectedSession.trainer.name}</ModalText>
-            <ModalText><strong>Capacity:</strong> {selectedSession.capacity}</ModalText>
-            <ModalText><strong>Description:</strong> {selectedSession.description}</ModalText>
-            {/* Only show Join button for upcoming sessions */}
-            { !attendedSessions.some(attended => attended.id === selectedSession.id) && (
-              <JoinButton onClick={() => handleJoinSession(selectedSession.id)}>Join</JoinButton>
-            )}
-          </StyledModalContent>
-        </StyledModal>
-      )}
       </DashboardGrid>
 
       {showProfile && (

@@ -92,9 +92,27 @@ const sessionController = {
   // Add feedback for a session
   addFeedback: async (req, res) => {
     try {
-      const { sessionId, feedback } = req.body;
+      const { sessionId } = req.params;
+      const { feedback } = req.body;
       const memberId = req.user.id;
 
+      // Check if the registration exists
+      const registration = await prisma.registration.findUnique({
+        where: {
+          memberId_sessionId: {
+            memberId,
+            sessionId
+          }
+        }
+      });
+
+      if (!registration) {
+        return res.status(404).json({ 
+          message: 'You are not registered for this session' 
+        });
+      }
+
+      // Update the registration with feedback
       const updated = await prisma.registration.update({
         where: {
           memberId_sessionId: {
@@ -107,10 +125,13 @@ const sessionController = {
 
       res.json({
         message: 'Feedback added successfully',
-        registration: updated
+        feedback: updated.feedback
       });
     } catch (error) {
-      res.status(500).json({ message: 'Server error', error: error.message });
+      res.status(500).json({ 
+        message: 'Error adding feedback', 
+        error: error.message 
+      });
     }
   },
 
@@ -389,6 +410,41 @@ const sessionController = {
       res.json(registrations);
     } catch (error) {
       res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  },
+
+  // Add this new method to get feedback
+  getFeedback: async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const memberId = req.user.id;
+
+      const registration = await prisma.registration.findUnique({
+        where: {
+          memberId_sessionId: {
+            memberId,
+            sessionId
+          }
+        },
+        select: {
+          feedback: true
+        }
+      });
+
+      if (!registration) {
+        return res.status(404).json({ 
+          message: 'No registration found for this session' 
+        });
+      }
+
+      res.json({
+        feedback: registration.feedback
+      });
+    } catch (error) {
+      res.status(500).json({ 
+        message: 'Error retrieving feedback', 
+        error: error.message 
+      });
     }
   }
 };

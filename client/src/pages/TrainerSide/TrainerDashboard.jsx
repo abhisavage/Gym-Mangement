@@ -444,7 +444,8 @@ const TrainerDashboard = () => {
   const handleEditSession = (session) => {
     const scheduleDate = new Date(session.schedule);
     const date = scheduleDate.toISOString().split('T')[0];
-    const time = scheduleDate.toTimeString().slice(0, 5);
+    const time = scheduleDate.toISOString().slice(11, 16);
+    console.log(time);
 
     setEditingSession(session);
     setSessionDetails({
@@ -569,8 +570,8 @@ const TrainerDashboard = () => {
             <SessionCard key={session.id}>
               <SessionInfo>
                 <h3>{session.sessionName}</h3>
-                <p>Date: {new Date(session.schedule).toLocaleDateString()}</p>
-                <p>Time: {new Date(session.schedule).toLocaleTimeString()}</p>
+                <p>Date: {sessionDate.toLocaleDateString('en-GB')}</p>
+                <p>Time: {sessionDate.toISOString().slice(11, 16)}</p>
                 <p>Capacity: {session.capacity}</p>
                 <p>Description: {session.description}</p>
               </SessionInfo>
