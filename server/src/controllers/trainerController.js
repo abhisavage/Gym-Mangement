@@ -135,6 +135,9 @@ const trainerController = {
               }
             }
           }
+        },
+        orderBy: {
+          schedule: 'asc' // Order sessions by session schedule in ascending order
         }
       });
 
