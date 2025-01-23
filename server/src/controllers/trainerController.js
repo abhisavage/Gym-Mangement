@@ -150,7 +150,7 @@ const trainerController = {
   // Update trainer profile
   updateProfile: async (req, res) => {
     try {
-      const { name, age, speciality } = req.body;
+      const { name, age, email, speciality } = req.body;
       const trainerId = req.user.id;
 
       const updatedTrainer = await prisma.trainer.update({
@@ -158,6 +158,7 @@ const trainerController = {
         data: {
           name,
           age,
+          email,
           speciality
         }
       });

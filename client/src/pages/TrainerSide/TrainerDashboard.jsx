@@ -202,6 +202,7 @@ const ProfileField = styled.div`
     border: 1px solid ${props => props.isEditing ? '#1A1B4B' : '#ddd'};
     border-radius: 8px;
     font-size: 16px;
+    color: ${props => props.isEditing ? 'black' : 'rgba(0, 0, 0, 0.9)'};
     background: ${props => props.isEditing ? 'white' : '#f8f9fa'};
     ${props => !props.isEditing && 'pointer-events: none;'}
   }
@@ -287,6 +288,7 @@ const Input = styled.input`
   border-radius: 8px;
   width: 100%;
   transition: all 0.3s ease;
+  margin-top: 15px;
 
   &:focus {
     border-color: #1B1B3A;
@@ -318,11 +320,26 @@ const EditButton = styled(Button)`
   }
 `;
 
+const Select = styled.select`
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  width: 100%;
+  
+  &:focus {
+    outline: none;
+    border-color: #1A1B4B;
+    box-shadow: 0 0 0 2px rgba(26, 27, 75, 0.1);
+  }
+`;
+
 const TrainerDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   const [profile, setProfile] = useState({
     name: '',
+    age: '',
     email: '',
     speciality: '',
     experience: '5 years',
@@ -345,6 +362,20 @@ const TrainerDashboard = () => {
   const [registeredMembers, setRegisteredMembers] = useState([]);
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false); // State for the members modal
+
+  const specialities = [
+    'Weight Training',
+    'Yoga',
+    'CrossFit',
+    'Cardio',
+    'HIIT',
+    'Pilates',
+    'Functional Training',
+    'Bodybuilding',
+    'Zumba',
+    'Martial Arts',
+    'Others'
+  ];
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -409,8 +440,28 @@ const TrainerDashboard = () => {
   };
 
   const handleSaveChanges = async () => {
-    setIsEditing(false);
-    toast.success('Profile updated successfully!');
+    try {
+      const { name, age, email, speciality } = profile; // Destructure the required fields
+
+      const response = await fetch(`${API_BASE_URL}/trainers/edit-profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('trainerToken')}` // Include the token for authentication
+        },
+        body: JSON.stringify({ name, age, email, speciality }) // Send only the required fields
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update profile');
+      }
+
+      toast.success('Profile updated successfully!');
+      setIsEditing(false); // Exit editing mode
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   const handleAvailabilityChange = (dayIndex) => {
@@ -465,6 +516,13 @@ const TrainerDashboard = () => {
       toast.error('Please select both date and time');
       return;
     }
+    const selectedDate = new Date(`${sessionDetails.date}T${sessionDetails.time}:00`);
+    const now = new Date();
+    if (selectedDate < now) {
+        toast.error('You cannot add a session in the past. Please select today or a future date.');
+        return;
+    }
+
 
     const sessionData = {
       sessionName: sessionDetails.title,
@@ -701,6 +759,15 @@ const TrainerDashboard = () => {
               />
             </ProfileField>
             <ProfileField isEditing={isEditing}>
+              <label>Age:</label>
+              <input 
+                type="text" 
+                value={profile.age} 
+                onChange={e => setProfile({...profile, age: e.target.value})}
+                disabled={!isEditing}
+              />
+            </ProfileField>
+            <ProfileField isEditing={isEditing}>
               <label>Email:</label>
               <input 
                 type="email" 
@@ -711,12 +778,46 @@ const TrainerDashboard = () => {
             </ProfileField>
             <ProfileField isEditing={isEditing}>
               <label>Speciality:</label>
-              <input 
-                type="text" 
-                value={profile.speciality} 
-                onChange={e => setProfile({...profile, speciality: e.target.value})}
-                disabled={!isEditing}
-              />
+              {isEditing ? (
+                <>
+                  <Select 
+                    value={profile.speciality} 
+                    onChange={e => {
+                      const value = e.target.value;
+                      setProfile({
+                        ...profile,
+                        speciality: value,
+                        otherSpeciality: value === 'Others' ? profile.otherSpeciality : ''
+                      });
+                    }}
+                  >
+                    {specialities.map((speciality) => (
+                      <option key={speciality} value={speciality}>
+                        {speciality}
+                      </option>
+                    ))}
+                  </Select>
+                  {profile.speciality === 'Others' && (
+                    <Input
+                      type="text"
+                      placeholder="Please specify your speciality"
+                      value={profile.otherSpeciality}
+                      onChange={(e) => setProfile({
+                        ...profile,
+                        otherSpeciality: e.target.value
+                      })}
+                      required
+                    />
+                  )}
+                </>
+              ) : (
+                <input 
+                  type="text" 
+                  value={profile.speciality} 
+                  onChange={e => setProfile({...profile, speciality: e.target.value})}
+                  disabled={!isEditing}
+                />
+              )}
             </ProfileField>
             <ProfileField isEditing={isEditing}>
               <label>Experience:</label>
