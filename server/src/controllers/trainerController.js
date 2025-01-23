@@ -193,7 +193,8 @@ const trainerController = {
           name: trainer.name,
           email: trainer.email,
           age: trainer.age,
-          speciality: trainer.speciality
+          speciality: trainer.speciality, 
+          availability: trainer.availability
         }
       });
     } catch (error) {
