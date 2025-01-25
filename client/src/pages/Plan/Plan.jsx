@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Formik, Form } from 'formik';
+import { Formik, Form, FieldArray } from 'formik';
 import * as Yup from 'yup';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -17,6 +17,8 @@ import {
   Button,
   Input
 } from '../../styles/CommonStyles';
+import axios from 'axios';
+import EditPlanModal from '../../components/EditPlanModal/EditPlanModal';
 
 const PlanForm = styled(Card)`
   background: #1A1B4B;
@@ -41,7 +43,8 @@ const SaveButton = styled(Button)`
 const validationSchema = Yup.object().shape({
   planName: Yup.string().required('Plan name is required'),
   validity: Yup.number().required('Validity is required'),
-  amount: Yup.number().required('Amount is required')
+  amount: Yup.number().required('Amount is required'),
+  features: Yup.array().of(Yup.string().required('Feature is required')).min(1, 'At least one feature is required')
 });
 
 const FormGrid = styled.div`
@@ -122,33 +125,85 @@ const EditButton = styled(Button)`
 `;
 
 const Plan = () => {
-  const [plans, setPlans] = useState([
-    { id: 1, planName: '1 month', validity: 1, amount: 800 },
-    { id: 2, planName: '3 months', validity: 3, amount: 2200 },
-    { id: 3, planName: '6 months', validity: 6, amount: 4300 },
-    { id: 4, planName: 'Annual', validity: 12, amount: 8500 },
-  ]);
-  
+  const [plans, setPlans] = useState([]);
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [entriesPerPage, setEntriesPerPage] = useState(10);
 
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/memberships/plans', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
+          },
+        });
+        
+        if (Array.isArray(response.data.plans)) {
+          setPlans(response.data.plans);
+        } else {
+          toast.error('Unexpected response format');
+          console.error('Unexpected response format:', response.data);
+        }
+      } catch (error) {
+        toast.error('Failed to fetch plans');
+        console.error('Error fetching plans:', error);
+      }
+    };
+
+    fetchPlans();
+  }, []);
+
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setPlans([...plans, { id: plans.length + 1, ...values }]);
+      // Prepare the data for the API call
+      const planData = {
+        planName: values.planName,
+        duration: parseInt(values.validity), // Convert validity to an integer
+        cost: parseFloat(values.amount), // Convert amount to a float
+        features: values.features // This is already an array
+      };
+
+      // Make API call to add the plan
+      const response = await axios.post('http://localhost:5000/api/memberships/plans', planData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Update the state with the new plan
+      setPlans([...plans, response.data.plan]); // Assuming the response contains the new plan
       toast.success('Plan added successfully!');
       resetForm();
     } catch (error) {
       toast.error('Failed to add plan');
+      console.error('Error adding plan:', error.response ? error.response.data : error);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleEdit = (id) => {
-    toast.info('Edit functionality coming soon!');
+  const handleEdit = (plan) => {
+    setSelectedPlan(plan); // Set the selected plan to be edited
+    setIsModalOpen(true); // Open the modal
+  };
+
+  const handleUpdate = async (id, updatedPlan) => {
+    try {
+      const response = await axios.put(`http://localhost:5000/api/memberships/plans/${id}`, updatedPlan, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      setPlans(plans.map(plan => (plan.id === id ? response.data.plan : plan))); // Update the state
+      toast.success('Plan updated successfully!');
+    } catch (error) {
+      toast.error('Failed to update plan');
+      console.error('Error updating plan:', error.response ? error.response.data : error);
+    }
   };
 
   const filteredPlans = plans.filter(plan => 
@@ -171,14 +226,14 @@ const Plan = () => {
           </HeaderActions>
         </Header>
 
-        <Formik
-          initialValues={{ planName: '', validity: '', amount: '' }}
-          validationSchema={validationSchema}
-          onSubmit={handleSubmit}
-        >
-          {({ values, errors, touched, handleChange, handleBlur, isSubmitting }) => (
-            <Form>
-              <PlanForm>
+        <PlanForm>
+          <Formik
+            initialValues={{ planName: '', validity: '', amount: '', features: [''] }}
+            validationSchema={validationSchema}
+            onSubmit={handleSubmit}
+          >
+            {({ values, errors, touched, handleChange, handleBlur, isSubmitting }) => (
+              <Form>
                 <FormGrid>
                   <InputGroup>
                     <Label>Plan Name</Label>
@@ -194,7 +249,7 @@ const Plan = () => {
                   </InputGroup>
 
                   <InputGroup>
-                    <Label>Validity</Label>
+                    <Label>Duration (months)</Label>
                     <Input
                       name="validity"
                       type="number"
@@ -208,7 +263,7 @@ const Plan = () => {
                   </InputGroup>
 
                   <InputGroup>
-                    <Label>Amount</Label>
+                    <Label>Cost (₹)</Label>
                     <Input
                       name="amount"
                       type="number"
@@ -220,6 +275,29 @@ const Plan = () => {
                       <div style={{color: '#F4B740'}}>{errors.amount}</div>
                     )}
                   </InputGroup>
+
+                  <FieldArray name="features">
+                    {({ push, remove }) => (
+                      <div>
+                        <Label>Features</Label>
+                        {values.features.map((feature, index) => (
+                          <InputGroup key={index}>
+                            <Input
+                              name={`features.${index}`}
+                              value={feature}
+                              onChange={handleChange}
+                              onBlur={handleBlur}
+                            />
+                            <Button type="button" onClick={() => remove(index)}>Remove</Button>
+                            {touched.features && touched.features[index] && errors.features && errors.features[index] && (
+                              <div style={{color: '#F4B740'}}>{errors.features[index]}</div>
+                            )}
+                          </InputGroup>
+                        ))}
+                        <Button type="button" onClick={() => push('')}>Add Feature</Button>
+                      </div>
+                    )}
+                  </FieldArray>
                 </FormGrid>
 
                 <ButtonGroup>
@@ -228,15 +306,15 @@ const Plan = () => {
                     {isSubmitting ? 'Saving...' : 'Save'}
                   </SaveButton>
                 </ButtonGroup>
-              </PlanForm>
-            </Form>
-          )}
-        </Formik>
+              </Form>
+            )}
+          </Formik>
+        </PlanForm>
 
         <TableSection>
           <TableHeader>
             <ShowEntities>
-              Show Entities
+              Show Entries
               <Select 
                 value={entriesPerPage}
                 onChange={(e) => setEntriesPerPage(Number(e.target.value))}
@@ -261,8 +339,8 @@ const Plan = () => {
             <thead>
               <tr>
                 <Th>Plan Name</Th>
-                <Th>Validity</Th>
-                <Th>Amount</Th>
+                <Th>Duration (months)</Th>
+                <Th>Cost (₹)</Th>
                 <Th>Edit</Th>
               </tr>
             </thead>
@@ -270,10 +348,10 @@ const Plan = () => {
               {filteredPlans.map(plan => (
                 <tr key={plan.id}>
                   <Td>{plan.planName}</Td>
-                  <Td>{plan.validity}</Td>
-                  <Td>{plan.amount}</Td>
+                  <Td>{plan.duration} months</Td>
+                  <Td>₹{plan.cost}</Td>
                   <Td>
-                    <EditButton onClick={() => handleEdit(plan.id)}>
+                    <EditButton onClick={() => handleEdit(plan)}>
                       Edit
                     </EditButton>
                   </Td>
@@ -282,6 +360,12 @@ const Plan = () => {
             </tbody>
           </Table>
         </TableSection>
+        <EditPlanModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          plan={selectedPlan}
+          onUpdate={handleUpdate}
+        />
         <ToastContainer position="top-right" autoClose={3000} />
       </MainContent>
     </PageContainer>
