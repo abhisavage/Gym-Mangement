@@ -269,9 +269,11 @@ const sessionController = {
       // Filter and format sessions
       const availableSessions = sessions.map(session => ({
         id: session.id,
-        title: session.title,
+        title: session.sessionName,
         description: session.description,
         duration: session.duration,
+        schedule: session.schedule,
+        capacity: session.capacity,
         availableSpots: session.capacity - session.registrations.length,
         trainer: {
           id: session.trainer.id,

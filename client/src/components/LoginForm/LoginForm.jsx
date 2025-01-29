@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import {FaEye, FaEyeSlash} from 'react-icons/fa';
+import axios from 'axios';
+import API_BASE_URL from '../../config';
 
 const FormContainer = styled.div`
   width: 100%;
@@ -117,13 +119,28 @@ const LoginForm = () => {
     password: '',
     rememberMe: false
   });
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add your login validation logic here
-    
-    // For now, just navigate to dashboard
-    navigate('/dashboard');
+    setError('');
+    try {
+      const response = await axios.post(`${API_BASE_URL}/admin/login`, {
+        email: formData.email,
+        password: formData.password,
+      });
+      // Store the admin token in local storage
+      localStorage.setItem('adminToken', response.data.token);
+      console.log(response.data);
+      navigate('/dashboard');
+    } catch (error) {
+      if (error.response && error.response.status === 401) {
+        setError('Invalid email or password. Please try again.');
+      } else {
+        setError('An error occurred. Please try again later.');
+      }
+      console.error('Login failed:', error.response.data);
+    }
   };
 
   const handleChange = (e) => {
@@ -139,6 +156,8 @@ const LoginForm = () => {
       <Form onSubmit={handleSubmit}>
         <Title>Sign-in</Title>
         
+        {error && <p style={{ color: 'red' }}>{error}</p>}
+
         <InputGroup>
           <Label htmlFor="email">Email*</Label>
           <Input

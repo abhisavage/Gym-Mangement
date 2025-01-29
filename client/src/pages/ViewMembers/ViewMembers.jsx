@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import styled from 'styled-components';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -14,6 +15,7 @@ import {
   Card,
   Button
 } from '../../styles/CommonStyles';
+import API_BASE_URL from '../../config';
 
 const Title = styled.h1`
   color: #1A1B4B;
@@ -173,15 +175,33 @@ const PaginationButton = styled(Button)`
 `;
 
 const ViewMembers = () => {
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [entriesPerPage, setEntriesPerPage] = useState(10);
 
-  const members = [
-    { id: 'SFM2301N1', name: 'Member 1', dateEnrolled: 'Jan 11', dateExpiration: 'Feb 11' },
-    { id: 'SFM2301N2', name: 'Member 2', dateEnrolled: 'Jan 11', dateExpiration: 'Feb 11' },
-    { id: 'SFM2301N3', name: 'Member 3', dateEnrolled: 'Jan 11', dateExpiration: 'Feb 11' },
-    { id: 'SFM2301N4', name: 'Member 4', dateEnrolled: 'Jan 11', dateExpiration: 'Feb 11' }
-  ];
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/admin/members`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
+          },
+        });
+        setMembers(response.data); // Assuming the response data is an array of members
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMembers();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <PageContainer>
@@ -237,21 +257,19 @@ const ViewMembers = () => {
               <tr>
                 <Th>Name</Th>
                 <Th>Member ID</Th>
-                <Th>Date Enrolled</Th>
-                <Th>Date Expiration</Th>
-                <Th>Actions</Th>
+                <Th>Plan Name</Th>
+                <Th>Plan Start Date</Th>
+                <Th>Plan End Date</Th>
               </tr>
             </thead>
             <tbody>
               {members.map(member => (
                 <tr key={member.id}>
                   <Td>{member.name}</Td>
-                  <Td>{member.id}</Td>
-                  <Td>{member.dateEnrolled}</Td>
-                  <Td>{member.dateExpiration}</Td>
-                  <Td>
-                    <EditButton>Edit</EditButton>
-                  </Td>
+                  <Td>{member.id.slice(-12)}</Td>
+                  <Td>{member.membership?.planName || 'N/A'}</Td>
+                  <Td>{member.planStartDate ? new Date(member.planStartDate).toLocaleDateString() : 'N/A'}</Td>
+                  <Td>{member.planEndDate ? new Date(member.planEndDate).toLocaleDateString() : 'N/A'}</Td>
                 </tr>
               ))}
             </tbody>

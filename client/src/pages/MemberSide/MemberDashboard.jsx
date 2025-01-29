@@ -537,6 +537,51 @@ const SubmittedFeedback = styled.div`
   color: #666;
 `;
 
+const BetaCard = styled.div`
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  min-height: 200px;
+  width: 100%;
+  max-width: 450px;
+  position:relative
+  display: flex, 
+  flex-direction: column, 
+  align-items: center
+  justify-content: center
+  text-align: center
+
+  /* First three cards (Membership, Record Equipment, Recent Equipment) take full width */
+  &:nth-child(-n+3) {
+    width: 100%;
+  }
+
+  h2 {
+    color: #1A1B4B;
+    font-size: 20px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+  }
+`;
+
+const AIButton = styled.button`
+  background: #1A1B4B;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: #2A2B5B;
+  }
+`;
+
 const MemberDashboard = () => {
   const navigate = useNavigate();
   const memberName = JSON.parse(localStorage.getItem('memberData')).member.name; // This retrieves the name from localStorage
@@ -839,6 +884,10 @@ const MemberDashboard = () => {
     return new Date(sessionSchedule) < new Date();
   };
 
+  const handleAIButtonClick = () => {
+    navigate('/member/AI');
+  };
+
   return (
     <DashboardContainer>
       <Header>
@@ -1035,6 +1084,11 @@ const MemberDashboard = () => {
           <ShowMoreButton onClick={handleShowMoreAttended}>Show More</ShowMoreButton>
         )}
       </Card>
+
+      <BetaCard>
+        <h2>Beta Function</h2>
+        <AIButton onClick={handleAIButtonClick}>AI Assistant</AIButton>
+      </BetaCard>
       </DashboardGrid>
 
       {showProfile && (

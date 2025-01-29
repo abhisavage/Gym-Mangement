@@ -443,9 +443,6 @@ const AdminProfile = () => {
                 </ProfileInfo>
               )}
             </ProfileCard>
-            <RegisterButton onClick={handleRegisterAdmin}>
-              Register New Admin Account
-            </RegisterButton>
           </div>
 
           <FormSection>

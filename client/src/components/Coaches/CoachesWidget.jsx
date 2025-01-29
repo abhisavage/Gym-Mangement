@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 const CoachCard = styled.div`
   background: white;
@@ -52,11 +54,24 @@ const CoachName = styled.div`
 `;
 
 const CoachesWidget = () => {
-  const previewCoaches = [
-    { id: 1, name: "Juan Dela Cruz" },
-    { id: 2, name: "Peter" },
-    { id: 3, name: "Peter" },
-  ];
+  const [trainers, setTrainers] = useState([]);
+
+  useEffect(() => {
+    const fetchTrainers = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/admin/trainers', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('adminToken')}`, // Use the appropriate token
+          },
+        });
+        setTrainers(response.data); // Assuming response.data is an array of trainers
+      } catch (error) {
+        console.error('Error fetching trainers:', error);
+      }
+    };
+
+    fetchTrainers();
+  }, []);
 
   return (
     <CoachCard>
@@ -65,10 +80,10 @@ const CoachesWidget = () => {
         <ViewAll to="/coaches">View All</ViewAll>
       </Header>
       <CoachList>
-        {previewCoaches.map(coach => (
-          <CoachItem key={coach.id}>
+        {trainers.map(trainer => (
+          <CoachItem key={trainer.id}>
             <CoachAvatar />
-            <CoachName>{coach.name}</CoachName>
+            <CoachName>{trainer.name}</CoachName>
           </CoachItem>
         ))}
       </CoachList>

@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 const MembersCard = styled.div`
   background: white;
@@ -57,20 +59,35 @@ const MemberAvatar = styled.div`
 `;
 
 const ActiveMembersWidget = () => {
-  const previewMembers = [
-    { id: 1, name: "James Medalla" },
-    { id: 2, name: "Kent Charl Mabutas" },
-    { id: 3, name: "John Elmar Rodrigo" }
-  ];
+  const [activeMembers, setActiveMembers] = useState([]);
+
+  useEffect(() => {
+    const fetchActiveMembers = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/admin/members', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('adminToken')}`, // Use the appropriate token
+          },
+        });
+        // Assuming response.data contains an array of members with memberships
+        const membersWithMemberships = response.data.filter(member => member.membership); // Adjust based on your data structure
+        setActiveMembers(membersWithMemberships);
+      } catch (error) {
+        console.error('Error fetching active members:', error);
+      }
+    };
+
+    fetchActiveMembers();
+  }, []);
 
   return (
     <MembersCard>
       <Header>
         <Title>Active Members</Title>
-        <ViewAll to="/members">View All Members</ViewAll>
+        <ViewAll to="/view-members">View All Members</ViewAll>
       </Header>
       <MembersList>
-        {previewMembers.map(member => (
+        {activeMembers.map(member => (
           <MemberRow key={member.id}>
             <MemberInfo>
               <MemberAvatar />
