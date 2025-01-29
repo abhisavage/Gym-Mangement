@@ -126,7 +126,7 @@ const Sidebar = () => {
     { path: '/plan', name: 'Plan', icon: '📅' },
     // { path: '/payment', name: 'Payment', icon: '💰' },
     { path: '/inventory', name: 'Inventory', icon: '📦' },
-    { path: '/view-members', name: 'View Members', icon: '👥' },
+    { path: '/view-members', name: 'Members', icon: '👥' },
     { path: '/coaches', name: 'Coaches', icon: '🏋️' },
     { path: '/report', name: 'Report', icon: '📈' }
   ];

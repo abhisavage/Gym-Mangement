@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Formik, Form } from 'formik';
 import * as Yup from 'yup';
@@ -18,6 +18,7 @@ import {
   Input
 } from '../../styles/CommonStyles';
 import AddEquipmentModal from '../../components/Modals/AddEquipmentModal';
+import axios from 'axios';
 
 // Styled Components
 const AddEquipmentButton = styled(Button)`
@@ -219,13 +220,31 @@ const Inventory = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [equipments, setEquipments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const equipments = [
-    { id: 1, name: 'Treadmill', totalNo: 1, status: 'Active' },
-    { id: 2, name: '10 lbs Dumbell', totalNo: 3, status: 'Inactive' },
-    { id: 3, name: '15 lbs Dumbell', totalNo: 6, status: 'Active' },
-    { id: 4, name: '20 lbs Dumbell', totalNo: 12, status: 'Active' }
-  ];
+  useEffect(() => {
+    const fetchEquipments = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/equipment/getall', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('adminToken')}`, // Include token if needed
+          },
+        });
+        setEquipments(response.data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEquipments();
+  }, []);
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     try {
@@ -317,7 +336,7 @@ const Inventory = () => {
               {equipments.map(equipment => (
                 <tr key={equipment.id}>
                   <Td>{equipment.name}</Td>
-                  <Td>{equipment.totalNo}</Td>
+                  <Td>{equipment.quantity}</Td>
                   <Td>
                     <StatusBadge active={equipment.status === 'Active'}>
                       {equipment.status}

@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import axios from 'axios';
 import { Link } from 'react-router-dom';
 
 const SalesCard = styled.div`
@@ -43,16 +45,48 @@ const SalesPercentage = styled.div`
   color: #1a1b4b;
 `;
 
+const TotalSales = styled.h3`
+  margin: 0;
+  font-weight: normal;
+`;
+
 const SalesWidget = () => {
+  const [totalSales, setTotalSales] = useState(0);
+  const [salesPercentage, setSalesPercentage] = useState(0);
+  const targetSales = 100000; // Example target sales amount
+
+  useEffect(() => {
+    const fetchSalesData = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/payments/revenue-and-active-memberships', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('adminToken')}`, // Use the appropriate token
+          },
+        });
+        const totalRevenue = response.data.totalRevenue; // Adjust based on your actual response structure
+        setTotalSales(totalRevenue);
+
+        // Calculate percentage
+        const percentage = ((totalRevenue / targetSales) * 100).toFixed(2); // Fixed to 2 decimal places
+        setSalesPercentage(percentage);
+      } catch (error) {
+        console.error('Error fetching sales data:', error);
+      }
+    };
+
+    fetchSalesData();
+  }, []);
+
   return (
     <SalesCard>
       <Header>
         <Title>Sales</Title>
-        <ViewAll to="/sales">View Details</ViewAll>
+        <ViewAll to="/report">View Details</ViewAll>
       </Header>
       <ChartPreview>
-        <SalesPercentage>84%</SalesPercentage>
+        <SalesPercentage>{salesPercentage}%</SalesPercentage>
       </ChartPreview>
+      <TotalSales>Target Sales: ₹{targetSales}</TotalSales>
     </SalesCard>
   );
 };

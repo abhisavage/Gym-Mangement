@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import axios from 'axios';
 
 const InventoryWrapper = styled.div`
   margin-top: 20px;
@@ -39,20 +41,33 @@ const ItemCount = styled.span`
 `;
 
 const InventoryWidget = () => {
-  const inventoryItems = [
-    { name: 'Dumbbells', count: '24 sets' },
-    { name: 'Treadmills', count: '8 units' },
-    { name: 'Yoga Mats', count: '15 pcs' }
-  ];
+  const [equipment, setEquipment] = useState([]);
+
+  useEffect(() => {
+    const fetchEquipment = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/equipment/getall', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('adminToken')}`, // Use the appropriate token
+          },
+        });
+        setEquipment(response.data); // Assuming response.data is an array of equipment
+      } catch (error) {
+        console.error('Error fetching equipment:', error);
+      }
+    };
+
+    fetchEquipment();
+  }, []);
 
   return (
     <InventoryWrapper>
-      <Title>Inventory Overview</Title>
+      <Title>Equipment Inventory</Title>
       <InventoryList>
-        {inventoryItems.map((item, index) => (
-          <InventoryItem key={index}>
+        {equipment.map(item => (
+          <InventoryItem key={item.id}>
             <ItemName>{item.name}</ItemName>
-            <ItemCount>{item.count}</ItemCount>
+            <ItemCount>{item.quantity} units</ItemCount>
           </InventoryItem>
         ))}
       </InventoryList>

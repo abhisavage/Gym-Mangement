@@ -19,6 +19,7 @@ import {
 } from '../../styles/CommonStyles';
 import axios from 'axios';
 import EditPlanModal from '../../components/EditPlanModal/EditPlanModal';
+import API_BASE_URL from '../../config';
 
 const PlanForm = styled(Card)`
   background: #1A1B4B;
@@ -134,7 +135,7 @@ const Plan = () => {
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/memberships/plans', {
+        const response = await axios.get(`${API_BASE_URL}/memberships/plans`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
           },
@@ -166,7 +167,7 @@ const Plan = () => {
       };
 
       // Make API call to add the plan
-      const response = await axios.post('http://localhost:5000/api/memberships/plans', planData, {
+      const response = await axios.post(`${API_BASE_URL}/memberships/plans`, planData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
           'Content-Type': 'application/json'
@@ -192,7 +193,7 @@ const Plan = () => {
 
   const handleUpdate = async (id, updatedPlan) => {
     try {
-      const response = await axios.put(`http://localhost:5000/api/memberships/plans/${id}`, updatedPlan, {
+      const response = await axios.put(`${API_BASE_URL}/memberships/plans/${id}`, updatedPlan, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
           'Content-Type': 'application/json'

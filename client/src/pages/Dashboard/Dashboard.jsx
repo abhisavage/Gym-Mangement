@@ -158,8 +158,8 @@ const Dashboard = () => {
           </Header>
 
           <WelcomeBanner>
-            <h2>Welcome Banner, Martell</h2>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+            <h2>Welcome Admin</h2>
+            {/* <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p> */}
           </WelcomeBanner>
 
           <StatsSection>

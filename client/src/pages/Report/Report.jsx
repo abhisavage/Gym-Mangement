@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -14,6 +14,7 @@ import {
   Card,
   Input
 } from '../../styles/CommonStyles';
+import axios from 'axios';
 
 const Title = styled.h1`
   color: #1A1B4B;
@@ -204,17 +205,11 @@ const StatisticsGrid = styled.div`
   margin-bottom: 30px;
 `;
 
-const StatCard = styled.div`
+const StatCard = styled(Card)`
   background: white;
   padding: 25px;
   border-radius: 15px;
   box-shadow: 0 4px 15px rgba(26, 27, 75, 0.08);
-  transition: transform 0.2s;
-  
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(26, 27, 75, 0.12);
-  }
 `;
 
 const StatLabel = styled.div`
@@ -238,47 +233,92 @@ const StatChange = styled.div`
   color: ${props => props.isPositive ? '#22C55E' : '#EF4444'};
 `;
 
+const calculateMonthsBetween = (fromDate, toDate) => {
+  const start = new Date(fromDate);
+  const end = new Date(toDate);
+  return (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth() + 1);
+};
+
 const Report = () => {
+  const [payments, setPayments] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
+  const [statistics, setStatistics] = useState({
+    totalRevenue: 0,
+    averageRevenue: 0,
+    totalMembers: 0,
+    conversionRate: 0,
+  });
+  const [totalAmount, setTotalAmount] = useState(0);
 
-  const payments = [
-    { id: 'SFM2301N1', memberName: 'Member 1', memberId: 'SFM2301N1', plan: '1 Month - PT', month: 'JAN', datePaid: '10-01-2023', amount: 1300 },
-    { id: 'SFM2301N2', memberName: 'Member 2', memberId: 'SFM2301N2', plan: '6 Months - PT', month: 'JAN', datePaid: '10-01-2023', amount: 6000 },
-    { id: 'SFM2301N3', memberName: 'Member 3', memberId: 'SFM2301N3', plan: '1 Month - M', month: 'JAN', datePaid: '10-01-2023', amount: 1200 },
-    { id: 'SFM2301N4', memberName: 'Member 4', memberId: 'SFM2301N4', plan: '3 Months', month: 'JAN', datePaid: '10-01-2023', amount: 3500 }
-  ];
-
-  const totalAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
-
-  const calculateStatistics = () => {
-    // This would normally come from your API/backend
-    return {
-      totalRevenue: {
-        value: 150000,
-        change: 12.5,
-        isPositive: true
-      },
-      averageRevenue: {
-        value: 15000,
-        change: 8.2,
-        isPositive: true
-      },
-      totalMembers: {
-        value: 45,
-        change: 15.0,
-        isPositive: true
-      },
-      conversionRate: {
-        value: 68.5,
-        change: -2.3,
-        isPositive: false
+  // Fetch payment details on component mount
+  useEffect(() => {
+    const fetchPayments = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/payments/all', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('adminToken')}`, // Use the appropriate admin token
+          },
+        });
+        setPayments(response.data); // Set the payment details
+      } catch (error) {
+        console.error('Error fetching payment details:', error);
+        toast.error('Failed to fetch payment details.');
       }
     };
-  };
 
-  const statistics = calculateStatistics();
+    fetchPayments();
+  }, []);
+
+  // Fetch statistics on component mount
+  useEffect(() => {
+    const fetchStatistics = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/payments/revenue-and-active-memberships', {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('adminToken')}`, // Use the appropriate admin token
+          },
+        });
+        const totalRevenue = response.data.totalRevenue;
+        const activeMemberships = response.data.activeMemberships;
+
+        // Calculate average revenue and total members
+        const months = calculateMonthsBetween(dateRange.from, dateRange.to);
+        const averageRevenue = totalRevenue / (months || 1);
+        const totalMembers = activeMemberships.reduce((sum, plan) => sum + plan.activeCount, 0);
+
+        setStatistics({
+          totalRevenue,
+          averageRevenue,
+          totalMembers,
+          conversionRate: (totalMembers / activeMemberships.length) * 100 || 0,
+        });
+      } catch (error) {
+        console.error('Error fetching statistics:', error);
+        toast.error('Failed to fetch statistics.');
+      }
+    };
+
+    fetchStatistics();
+  }, [dateRange]);
+
+  // Calculate total amount based on date range
+  useEffect(() => {
+    const calculateTotal = () => {
+      const filteredPayments = payments.filter(payment => {
+        const paymentDate = new Date(payment.paymentDate);
+        const fromDate = new Date(dateRange.from);
+        const toDate = new Date(dateRange.to);
+        return paymentDate >= fromDate && paymentDate <= toDate;
+      });
+
+      const total = filteredPayments.reduce((sum, payment) => sum + payment.amount, 0);
+      setTotalAmount(total);
+    };
+
+    calculateTotal();
+  }, [payments, dateRange]);
 
   return (
     <PageContainer>
@@ -301,38 +341,22 @@ const Report = () => {
         <StatisticsGrid>
           <StatCard>
             <StatLabel>Total Revenue</StatLabel>
-            <StatValue>₱{statistics.totalRevenue.value.toLocaleString()}</StatValue>
-            <StatChange isPositive={statistics.totalRevenue.isPositive}>
-              {statistics.totalRevenue.isPositive ? '↑' : '↓'} 
-              {Math.abs(statistics.totalRevenue.change)}%
-            </StatChange>
+            <StatValue>₹{statistics.totalRevenue.toLocaleString()}</StatValue>
           </StatCard>
 
           <StatCard>
             <StatLabel>Average Monthly Revenue</StatLabel>
-            <StatValue>₱{statistics.averageRevenue.value.toLocaleString()}</StatValue>
-            <StatChange isPositive={statistics.averageRevenue.isPositive}>
-              {statistics.averageRevenue.isPositive ? '↑' : '↓'} 
-              {Math.abs(statistics.averageRevenue.change)}%
-            </StatChange>
+            <StatValue>₹{statistics.averageRevenue.toLocaleString()}</StatValue>
           </StatCard>
 
           <StatCard>
             <StatLabel>Total Active Members</StatLabel>
-            <StatValue>{statistics.totalMembers.value}</StatValue>
-            <StatChange isPositive={statistics.totalMembers.isPositive}>
-              {statistics.totalMembers.isPositive ? '↑' : '↓'} 
-              {Math.abs(statistics.totalMembers.change)}%
-            </StatChange>
+            <StatValue>{statistics.totalMembers}</StatValue>
           </StatCard>
 
           <StatCard>
             <StatLabel>Conversion Rate</StatLabel>
-            <StatValue>{statistics.conversionRate.value}%</StatValue>
-            <StatChange isPositive={statistics.conversionRate.isPositive}>
-              {statistics.conversionRate.isPositive ? '↑' : '↓'} 
-              {Math.abs(statistics.conversionRate.change)}%
-            </StatChange>
+            <StatValue>{statistics.conversionRate.toFixed(2)}%</StatValue>
           </StatCard>
         </StatisticsGrid>
 
@@ -364,7 +388,9 @@ const Report = () => {
 
             <DateGroup>
               <Label>Total</Label>
-              <TotalAmount>₱{totalAmount.toLocaleString()}</TotalAmount>
+              <TotalAmount>
+                {totalAmount > 0 ? `₹${totalAmount.toLocaleString()}` : <h6>No revenue</h6>}
+              </TotalAmount>
             </DateGroup>
           </DateGrid>
         </DateRangeCard>
@@ -412,12 +438,12 @@ const Report = () => {
             <tbody>
               {payments.map(payment => (
                 <tr key={payment.id}>
-                  <Td>{payment.memberName}</Td>
-                  <Td>{payment.memberId}</Td>
-                  <Td>{payment.plan}</Td>
-                  <Td>{payment.month}</Td>
-                  <Td>{payment.datePaid}</Td>
-                  <Td>₱{payment.amount.toLocaleString()}</Td>
+                  <Td>{payment.member.name}</Td>
+                  <Td>{payment.memberId.slice(-12)}</Td>
+                  <Td>{payment.membership.planName}</Td>
+                  <Td>{payment.membership.duration} Month(s)</Td>
+                  <Td>{new Date(payment.paymentDate).toLocaleDateString()}</Td>
+                  <Td>₹{payment.amount.toLocaleString()}</Td>
                 </tr>
               ))}
             </tbody>

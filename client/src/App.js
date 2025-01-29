@@ -25,6 +25,7 @@ import MemberLogin from './pages/MemberSide/MemberLogin';
 import MemberRegister from './pages/MemberSide/MemberRegister';
 import MemberDashboard from './pages/MemberSide/MemberDashboard';
 import MemberPlan from './pages/MemberSide/MemberPlan';
+import AIAssistant from './pages/MemberSide/AIAssistant';
 
 function App() {
   return (
@@ -52,6 +53,7 @@ function App() {
         <Route path="/member/register" element={<MemberRegister />} />
         <Route path="/member/dashboard" element={<MemberDashboard />} />
         <Route path="/member/buyplan" element={<MemberPlan/>} />
+        <Route path="/member/AI" element={<AIAssistant/>}/>
 
         {/* Trainer Routes */}
         <Route path="/trainer/login" element={<TrainerLogin />} />
