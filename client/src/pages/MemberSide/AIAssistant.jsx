@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { AI_RECOMMENDER_URL } from '../../config';
 
 const AIAssistantContainer = styled.div`
   min-height: 100vh;
@@ -78,33 +79,97 @@ const RecommendationText = styled.div`
 
 const AIAssistant = () => {
   const [exerciseData, setExerciseData] = useState({
-    age: '',
-    currentWeight: '',
-    dreamWeight: '',
-    bmi: '',
-    gender: '',
+    Gender: '',
+    Age: '',
+    ActualWeight: '',
+    DreamWeight: '',
+    BMI: ''
   });
 
   const [dietData, setDietData] = useState({
-    preferences: '',
-    healthConditions: '',
-    nutritionalGoals: '',
-    favoriteFoods: '',
+    preferences: [],
+    healthConditions: [],
+    nutritionalGoals: [],
+    favoriteFoods: [],
   });
 
-  const [exerciseRecommendation, setExerciseRecommendation] = useState('');
-  const [dietRecommendation, setDietRecommendation] = useState('');
+  const [exerciseRecommendation, setExerciseRecommendation] = useState({
+    exercise: '',
+    duration: ''
+  });
 
-  const handleExerciseSubmit = (e) => {
+  const [dietRecommendation, setDietRecommendation] = useState({
+    meals: [],
+    supplements: []
+  });
+
+  const handleExerciseSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically call your AI API to get recommendations
-    setExerciseRecommendation(`Recommended Exercise: Jogging for 30 minutes.`);
+    try {
+      const response = await fetch('http://localhost:8000/recommend_exercise', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          Gender: exerciseData.Gender,
+          Age: exerciseData.Age,
+          'Actual Weight': exerciseData.ActualWeight,
+          'Dream Weight': exerciseData.DreamWeight,
+          BMI: exerciseData.BMI,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setExerciseRecommendation({
+        exercise: `${data['Predicted Exercise']}`,
+        duration: `${Math.round(data['Duration'])} min`
+      });
+    } catch (error) {
+      console.error('Error fetching exercise recommendation:', error);
+      setExerciseRecommendation({
+        exercise: 'Error fetching recommendation. Please try again later.',
+        duration: ''
+      });
+    }
   };
 
-  const handleDietSubmit = (e) => {
+  const handleDietSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically call your AI API to get recommendations
-    setDietRecommendation(`Recommended Diet: High-protein meals with vegetables.`);
+    try {
+      const response = await fetch('http://localhost:8000/recommend_diet', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          diet_preferences: dietData.preferences,
+          health_conditions: dietData.healthConditions,
+          nutritional_goals: dietData.nutritionalGoals,
+          favorite_foods: dietData.favoriteFoods,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setDietRecommendation({
+        meals: data.meals,
+        supplements: data.supplements
+      });
+    } catch (error) {
+      console.error('Error fetching diet recommendation:', error);
+      setDietRecommendation({
+        meals: [],
+        supplements: []
+      });
+    }
   };
 
   return (
@@ -114,41 +179,41 @@ const AIAssistant = () => {
           <h2>Exercise Recommendation</h2>
           <form onSubmit={handleExerciseSubmit}>
             <Select
-              value={exerciseData.gender}
-              onChange={(e) => setExerciseData({ ...exerciseData, gender: e.target.value })}
+              value={exerciseData.Gender}
+              onChange={(e) => setExerciseData({ ...exerciseData, Gender: e.target.value })}
               required
             >
               <option value="" disabled>Select Gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
             </Select>
             <Input
               type="number"
               placeholder="Age"
-              value={exerciseData.age}
-              onChange={(e) => setExerciseData({ ...exerciseData, age: e.target.value })}
+              value={exerciseData.Age}
+              onChange={(e) => setExerciseData({ ...exerciseData, Age: e.target.value })}
               required
             />
             <Input
               type="number"
-              placeholder="Current Weight (kg)"
-              value={exerciseData.currentWeight}
-              onChange={(e) => setExerciseData({ ...exerciseData, currentWeight: e.target.value })}
+              placeholder="Actual Weight (kg)"
+              value={exerciseData.ActualWeight}
+              onChange={(e) => setExerciseData({ ...exerciseData, ActualWeight: e.target.value })}
               required
             />
             <Input
               type="number"
               placeholder="Dream Weight (kg)"
-              value={exerciseData.dreamWeight}
-              onChange={(e) => setExerciseData({ ...exerciseData, dreamWeight: e.target.value })}
+              value={exerciseData.DreamWeight}
+              onChange={(e) => setExerciseData({ ...exerciseData, DreamWeight: e.target.value })}
               required
             />
             <Input
               type="number"
               placeholder="BMI"
-              value={exerciseData.bmi}
-              onChange={(e) => setExerciseData({ ...exerciseData, bmi: e.target.value })}
+              value={exerciseData.BMI}
+              onChange={(e) => setExerciseData({ ...exerciseData, BMI: e.target.value })}
               required
             />
             <Button type="submit">Get Recommendation</Button>
@@ -156,7 +221,18 @@ const AIAssistant = () => {
         </LeftSide>
         <RightSide>
           <h2>AI Recommendation</h2>
-          <RecommendationText>{exerciseRecommendation}</RecommendationText>
+          <div style={{margin: '10px' }}>
+            <h3>Exercise</h3>
+            <div>{exerciseRecommendation.exercise}</div>
+            {/* Display message if no exercise is recommended */}
+            {exerciseRecommendation.exercise === '' && (
+              <div style={{ color: 'black', margin: '10px' }}>No exercise recommended.</div>
+            )}
+          </div>
+          <div style={{margin: '10px' }}>
+            <h3>Average Duration</h3>
+            <div>{exerciseRecommendation.duration}</div>
+          </div>
         </RightSide>
       </Card>
 
@@ -166,23 +242,23 @@ const AIAssistant = () => {
           <form onSubmit={handleDietSubmit}>
             <Input
               type="text"
-              placeholder="Diet Preferences"
-              value={dietData.preferences}
-              onChange={(e) => setDietData({ ...dietData, preferences: e.target.value })}
+              placeholder="Diet Preferences (comma separated)"
+              value={dietData.preferences.join(', ')}
+              onChange={(e) => setDietData({ ...dietData, preferences: e.target.value.split(',').map(item => item.trim()) })}
               required
             />
             <Input
               type="text"
-              placeholder="Health Conditions"
-              value={dietData.healthConditions}
-              onChange={(e) => setDietData({ ...dietData, healthConditions: e.target.value })}
+              placeholder="Health Conditions (comma separated)"
+              value={dietData.healthConditions.join(', ')}
+              onChange={(e) => setDietData({ ...dietData, healthConditions: e.target.value.split(',').map(item => item.trim()) })}
               required
             />
             <Input
               type="text"
-              placeholder="Nutritional Goals"
-              value={dietData.nutritionalGoals}
-              onChange={(e) => setDietData({ ...dietData, nutritionalGoals: e.target.value })}
+              placeholder="Nutritional Goals (comma separated)"
+              value={dietData.nutritionalGoals.join(', ')}
+              onChange={(e) => setDietData({ ...dietData, nutritionalGoals: e.target.value.split(',').map(item => item.trim()) })}
               required
             />
             <Input
@@ -196,8 +272,31 @@ const AIAssistant = () => {
           </form>
         </LeftSide>
         <RightSide>
-          <h2>AI Recommendation</h2>
-          <RecommendationText>{dietRecommendation}</RecommendationText>
+                    <h2>AI Recommendation</h2>
+                    <div>
+                        <h3>Meals</h3>
+                        <ul style={{ padding: '10px', borderRadius: '5px', marginBottom: '10px' }}>
+                            {dietRecommendation.meals.length > 0 ? (
+                                dietRecommendation.meals.map((meal, index) => (
+                                    <li key={index} style={{ marginBottom: '5px' }}>{meal}</li>
+                                ))
+                            ) : (
+                                <li>No meals recommended.</li>
+                            )}
+                        </ul>
+                    </div>
+                    <div>
+                        <h3>Supplements</h3>
+                        <ul style={{ padding: '10px', borderRadius: '5px' }}>
+                            {dietRecommendation.supplements.length > 0 ? (
+                                dietRecommendation.supplements.map((supplement, index) => (
+                                    <li key={index} style={{ marginBottom: '5px' }}>{supplement}</li>
+                                ))
+                            ) : (
+                                <li>No supplements recommended.</li>
+                            )}
+                        </ul>
+                    </div>
         </RightSide>
       </Card>
     </AIAssistantContainer>
