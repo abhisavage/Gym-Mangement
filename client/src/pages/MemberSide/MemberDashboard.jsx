@@ -1016,7 +1016,7 @@ const MemberDashboard = () => {
             <ModalText><strong>Description:</strong> {selectedSession.description}</ModalText>
             
             {/* Show Join button for upcoming sessions */}
-            {!attendedSessions.some(attended => attended.id === selectedSession.id) && (
+            {new Date(selectedSession.schedule) >= new Date() && !attendedSessions.some(attended => attended.id === selectedSession.id) && (
               <JoinButton onClick={() => handleJoinSession(selectedSession.id)}>Join</JoinButton>
             )}
 
