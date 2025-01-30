@@ -818,7 +818,7 @@ const CSPLanding = () => {
         <PlansGrid>
           <PlanCard>
             <h3>Basic Plan</h3>
-            <div className="price">₱1,500<span>/month</span></div>
+            <div className="price">₹1,500<span>/month</span></div>
             <ul>
               <li>Access to Gym Equipment</li>
               <li>Basic Fitness Assessment</li>
@@ -830,7 +830,7 @@ const CSPLanding = () => {
 
           <PlanCard>
             <h3>Premium Plan</h3>
-            <div className="price">₱2,500<span>/month</span></div>
+            <div className="price">₹2,500<span>/month</span></div>
             <ul>
               <li>All Basic Plan Features</li>
               <li>Personal Training Sessions</li>
@@ -842,7 +842,7 @@ const CSPLanding = () => {
 
           <PlanCard>
             <h3>Elite Plan</h3>
-            <div className="price">₱3,500<span>/month</span></div>
+            <div className="price">₹3,500<span>/month</span></div>
             <ul>
               <li>All Premium Plan Features</li>
               <li>Unlimited PT Sessions</li>
@@ -869,7 +869,7 @@ const CSPLanding = () => {
             <div className="coach-image">
               <img src="/assets/coach-saitama.png" alt="Coach Saitama" />
             </div>
-            <h3>Coach Martell</h3>
+            <h3>Coach Saitama</h3>
             <p>Fitness & Nutrition</p>
           </CoachCard>
 
@@ -877,7 +877,7 @@ const CSPLanding = () => {
             <div className="coach-image">
               <img src="/assets/coach-jin.jpg" alt="Coach Jin" />
             </div>
-            <h3>Coach Ansel</h3>
+            <h3>Coach Mori</h3>
             <p>Personal Training</p>
           </CoachCard>
         </CoachesGrid>
@@ -888,7 +888,7 @@ const CSPLanding = () => {
         <LocationContent>
           <MapContainer>
             <iframe 
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3862.2383692254427!2d120.99612!3d14.52145!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTTCsDMxJzE3LjIiTiAxMjDCsDU5JzQ2LjAiRQ!5e0!3m2!1sen!2sph!4v1629789876543!5m2!1sen!2sph"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3872.2383692254427!2d77.58812!3d12.93445!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae168b1c1c1c1d%3A0x0!2zUi4gVi4gQ29sbGVnZSBvZiBFbmdpbmVlcmluZywgTWlzYW5hIEdyYW5kIE1hbmFnZW1lbnQ!5e0!3m2!1sen!2sin!4v1629789876543!5m2!1sen!2sin"
               allowFullScreen=""
               loading="lazy"
               title="Gym Location"
@@ -903,7 +903,7 @@ const CSPLanding = () => {
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
                 <circle cx="12" cy="10" r="3"/>
               </svg>
-              <p>12TH ST. GENERAL MATHIA VILLAMOR AIR BASE PASAY CITY</p>
+              <p>R. V. College of Engineering, Mysore Rd, RV Vidyaniketan, Post, Bengaluru, Karnataka 560059</p>
             </div>
 
             <div className="contact-item">
@@ -911,7 +911,7 @@ const CSPLanding = () => {
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                 <polyline points="22,6 12,13 2,6"/>
               </svg>
-              <p>Martel2008@yahoo.com</p>
+              <p>admin@admin.com</p>
             </div>
 
             <div className="contact-item">
@@ -970,11 +970,11 @@ const CSPLanding = () => {
           <FooterColumn>
             <h3>CONTACT INFO</h3>
             <ul>
-              <li>12TH ST. GENERAL MATHIA</li>
-              <li>VILLAMOR AIR BASE</li>
-              <li>PASAY CITY</li>
+              <li>R. V. College of Engineering</li>
+              <li>Mysore Rd, RV Vidyaniketan</li>
+              <li>Bengaluru, Karnataka 560059</li>
               <li>Phone: 09350417060</li>
-              <li>Email: Martel2008@yahoo.com</li>
+              <li>Email: admin@gym.com</li>
             </ul>
           </FooterColumn>
 
