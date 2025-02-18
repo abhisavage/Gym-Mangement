@@ -166,7 +166,6 @@ const StatusBadge = styled.span`
   font-weight: 500;
   background: ${props => props.active ? 'rgba(46, 213, 115, 0.2)' : 'rgba(255, 71, 87, 0.2)'};
   color: ${props => props.active ? '#2ED573' : '#FF4757'};
-  border: 1px solid ${props => props.active ? 'rgba(46, 213, 115, 0.3)' : 'rgba(255, 71, 87, 0.3)'};
 `;
 
 const Pagination = styled.div`
@@ -385,7 +384,7 @@ const Inventory = () => {
                   <Td>{equipment.name}</Td>
                   <Td>{equipment.quantity}</Td>
                   <Td>
-                    <StatusBadge active={equipment.status === 'Active'}>
+                    <StatusBadge active={equipment.status === 'Available'}>
                       {equipment.status}
                     </StatusBadge>
                   </Td>

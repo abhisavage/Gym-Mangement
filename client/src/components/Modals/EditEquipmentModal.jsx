@@ -54,8 +54,16 @@ const StyledInput = styled(Input)`
 `;
 
 const ReadOnlyInput = styled(StyledInput)`
-  background:rgb(255, 236, 236); /* Light gray background for read-only fields */
+  background: rgb(255, 236, 236); /* Light gray background for read-only fields */
   cursor: not-allowed; /* Change cursor to indicate non-editable */
+`;
+
+const StyledSelect = styled.select`
+  width: 100%;
+  padding: 12px;
+  background: #F5F5F5;
+  border: none;
+  border-radius: 10px;
 `;
 
 const ButtonGroup = styled.div`
@@ -137,12 +145,15 @@ const EditEquipmentModal = ({ onClose, onSubmit, equipment }) => {
 
               <InputGroup>
                 <Label>Status</Label>
-                <StyledInput
+                <StyledSelect
                   name="status"
                   value={values.status}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                />
+                >
+                  <option value="Available">Available</option>
+                  <option value="Not Available">Not Available</option>
+                </StyledSelect>
                 {touched.status && errors.status && (
                   <div style={{ color: 'red' }}>{errors.status}</div>
                 )}
