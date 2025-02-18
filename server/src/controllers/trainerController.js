@@ -217,6 +217,7 @@ const trainerController = {
           id: true,
           name: true,
           speciality: true,
+          availability: true
           // Include any other public fields you want to show
           // Excluding sensitive info like email, password
         }

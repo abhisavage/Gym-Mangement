@@ -319,6 +319,12 @@ const Inventory = () => {
       console.error('Error updating equipment:', error);
     }
   };
+  const filteredEquipments = equipments.filter(equipment => 
+    equipment.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <PageContainer>
@@ -353,7 +359,6 @@ const Inventory = () => {
                 <option value={50}>50</option>
               </Select>
             </ShowEntities>
-
             <SearchBar>
               <SearchInput
                 type="text"
@@ -373,13 +378,13 @@ const Inventory = () => {
             <thead>
               <tr>
                 <Th>Equipment Name</Th>
-                <Th>Quantity</Th>
+                <Th>Total no.</Th>
                 <Th>Status</Th>
                 <Th>Actions</Th>
               </tr>
             </thead>
             <tbody>
-              {equipments.map(equipment => (
+            {filteredEquipments.map(equipment => (
                 <tr key={equipment.id}>
                   <Td>{equipment.name}</Td>
                   <Td>{equipment.quantity}</Td>
@@ -389,7 +394,7 @@ const Inventory = () => {
                     </StatusBadge>
                   </Td>
                   <Td>
-                    <EditButton onClick={() => handleEditClick(equipment)}>Edit</EditButton>
+                  <EditButton onClick={() => handleEditClick(equipment)}>Edit</EditButton>
                   </Td>
                 </tr>
               ))}
@@ -409,7 +414,6 @@ const Inventory = () => {
             onSubmit={handleAddEquipment}
           />
         )}
-
         {showEditModal && currentEquipment && (
           <EditEquipmentModal
             onClose={() => setShowEditModal(false)}
@@ -417,7 +421,6 @@ const Inventory = () => {
             equipment={currentEquipment}
           />
         )}
-
         <ToastContainer position="top-right" autoClose={3000} />
       </MainContent>
     </PageContainer>

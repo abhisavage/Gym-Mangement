@@ -4,13 +4,16 @@ import pandas as pd
 import google.generativeai as genai
 import os
 from http import HTTPStatus
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Create a blueprint
 recommendation_app = Blueprint('recommendation', __name__)
 
 # Load the model and label encoder
-loaded_model = joblib.load('models/model.pkl')
-loaded_le = joblib.load('models/label_encoder.pkl')
+loaded_model = joblib.load('C:/Users/abhis/Desktop/Gym-Mangement/server/src/models/model.pkl')
+loaded_le = joblib.load('C:/Users/abhis/Desktop/Gym-Mangement/server/src/models/label_encoder.pkl')
 
 # Configure Gemini API
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
