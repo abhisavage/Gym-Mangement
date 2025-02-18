@@ -1,6 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Button } from '../../styles/CommonStyles';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import API_BASE_URL from '../../config';
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -28,7 +31,49 @@ const CloseButton = styled(Button)`
   margin-top: 20px;
 `;
 
-const SessionModal = ({ sessions, onClose }) => {
+const SessionList = styled.ul`
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+`;
+
+const SessionItem = styled.li`
+  margin-bottom: 15px;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+`;
+
+const SessionName = styled.h3`
+  margin: 0;
+  font-size: 18px;
+`;
+
+const SessionDetails = styled.p`
+  margin: 5px 0;
+`;
+
+const DeleteButton = styled(Button)`
+  background: red;
+  color: white;
+  margin-top: 10px;
+`;
+
+const SessionModal = ({ sessions, onClose, updateSessions }) => {
+  const handleDeleteSession = async (sessionId) => {
+    try {
+      await axios.delete(`${API_BASE_URL}/sessions/delete/${sessionId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
+        },
+      });
+      toast.success('Session deleted successfully');
+      updateSessions(sessionId);
+    } catch (error) {
+      toast.error('Failed to delete session');
+    }
+  };
+
   return (
     <ModalOverlay>
       <ModalContent>
@@ -36,17 +81,18 @@ const SessionModal = ({ sessions, onClose }) => {
         {sessions.length === 0 ? (
           <p>No sessions available for this trainer.</p>
         ) : (
-          <ul>
+          <SessionList>
             {sessions.map((session) => (
-              <li key={session.id}>
-                <h3>{session.title}</h3>
-                <p>Date: {new Date(session.schedule).toLocaleDateString()}</p>
-                <p>Time: {new Date(session.schedule).toISOString().split('T')[1].split('.')[0]}</p>
-                <p>Capacity: {session.availableSpots}</p>
-                <hr />
-              </li>
+              <SessionItem key={session.id}>
+                <SessionName>{session.sessionName}</SessionName>
+                <SessionDetails>Date: {new Date(session.schedule).toLocaleDateString()}</SessionDetails>
+                <SessionDetails>Time: {new Date(session.schedule).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</SessionDetails>
+                <SessionDetails>Capacity: {session.capacity}</SessionDetails>
+                <SessionDetails>Description: {session.description}</SessionDetails>
+                <DeleteButton onClick={() => handleDeleteSession(session.id)}>Delete</DeleteButton>
+              </SessionItem>
             ))}
-          </ul>
+          </SessionList>
         )}
         <CloseButton onClick={onClose}>Close</CloseButton>
       </ModalContent>

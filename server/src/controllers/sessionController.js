@@ -298,22 +298,17 @@ const sessionController = {
   deleteSession: async (req, res) => {
     try {
       const { sessionId } = req.params;
-      const trainerId = req.user.id;
 
-      // First check if session exists and belongs to this trainer
+      // Check if the session exists
       const session = await prisma.session.findUnique({
         where: { id: sessionId },
         include: {
-          registrations: true
+          registrations: true // Include registrations to delete them
         }
       });
 
       if (!session) {
         return res.status(404).json({ message: 'Session not found' });
-      }
-
-      if (session.trainerId !== trainerId) {
-        return res.status(403).json({ message: 'Not authorized to delete this session' });
       }
 
       // Delete all registrations for this session first
@@ -326,15 +321,14 @@ const sessionController = {
         where: { id: sessionId }
       });
 
-      res.json({ 
+      res.json({
         message: 'Session and related registrations deleted successfully',
         deletedSessionId: sessionId
       });
-
     } catch (error) {
-      res.status(500).json({ 
-        message: 'Error deleting session', 
-        error: error.message 
+      res.status(500).json({
+        message: 'Error deleting session',
+        error: error.message
       });
     }
   },
@@ -446,6 +440,38 @@ const sessionController = {
       res.status(500).json({ 
         message: 'Error retrieving feedback', 
         error: error.message 
+      });
+    }
+  },
+
+  // Get all sessions of a specific trainer (admin functionality)
+  getSessionsOfTrainerByAdmin: async (req, res) => {
+    const { trainerId } = req.params;
+
+    try {
+      // Fetch sessions for the specified trainer
+      const sessions = await prisma.session.findMany({
+        where: { trainerId },
+        include: {
+          trainer: {
+            select: {
+              name: true,
+              speciality: true
+            }
+          },
+          registrations: true // Include registrations if needed
+        }
+      });
+
+      if (sessions.length === 0) {
+        return res.status(404).json({ message: 'No sessions found for this trainer' });
+      }
+
+      res.json(sessions);
+    } catch (error) {
+      res.status(500).json({
+        message: 'Error retrieving sessions',
+        error: error.message
       });
     }
   }
