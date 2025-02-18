@@ -18,6 +18,7 @@ import {
   Input
 } from '../../styles/CommonStyles';
 import AddEquipmentModal from '../../components/Modals/AddEquipmentModal';
+import EditEquipmentModal from '../../components/Modals/EditEquipmentModal';
 import axios from 'axios';
 
 // Styled Components
@@ -223,6 +224,8 @@ const Inventory = () => {
   const [equipments, setEquipments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [currentEquipment, setCurrentEquipment] = useState(null);
 
   useEffect(() => {
     const fetchEquipments = async () => {
@@ -290,6 +293,34 @@ const Inventory = () => {
     }
   };
 
+  const handleEditClick = (equipment) => {
+    setCurrentEquipment(equipment);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateEquipment = async (id, updatedValues) => {
+    try {
+      await axios.put(`http://localhost:5000/api/equipment/${id}`, updatedValues, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('adminToken')}`, // Include token
+        },
+      });
+
+      // Update the equipment in the state
+      setEquipments(prevEquipments => 
+        prevEquipments.map(equipment => 
+          equipment.id === id ? { ...equipment, ...updatedValues } : equipment
+        )
+      );
+
+      toast.success('Equipment updated successfully!');
+      setShowEditModal(false);
+    } catch (error) {
+      toast.error('Failed to update equipment. Please try again.');
+      console.error('Error updating equipment:', error);
+    }
+  };
+
   return (
     <PageContainer>
       <Sidebar />
@@ -343,7 +374,7 @@ const Inventory = () => {
             <thead>
               <tr>
                 <Th>Equipment Name</Th>
-                <Th>Total no.</Th>
+                <Th>Quantity</Th>
                 <Th>Status</Th>
                 <Th>Actions</Th>
               </tr>
@@ -359,7 +390,7 @@ const Inventory = () => {
                     </StatusBadge>
                   </Td>
                   <Td>
-                    <EditButton>Edit</EditButton>
+                    <EditButton onClick={() => handleEditClick(equipment)}>Edit</EditButton>
                   </Td>
                 </tr>
               ))}
@@ -377,6 +408,14 @@ const Inventory = () => {
           <AddEquipmentModal
             onClose={() => setShowAddModal(false)}
             onSubmit={handleAddEquipment}
+          />
+        )}
+
+        {showEditModal && currentEquipment && (
+          <EditEquipmentModal
+            onClose={() => setShowEditModal(false)}
+            onSubmit={handleUpdateEquipment}
+            equipment={currentEquipment}
           />
         )}
 
