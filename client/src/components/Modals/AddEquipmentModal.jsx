@@ -138,11 +138,12 @@ const ErrorMessage = styled.div`
 `;
 
 const validationSchema = Yup.object().shape({
-  equipmentName: Yup.string().required('Equipment name is required'),
-  totalNo: Yup.number()
+  name: Yup.string().required('Equipment name is required'),
+  quantity: Yup.number()
     .required('Total number is required')
     .positive('Must be a positive number'),
-  status: Yup.string().required('Status is required')
+  status: Yup.string().required('Status is required'),
+  category: Yup.string().required('Category is required')
 });
 
 const AddEquipmentModal = ({ onClose, onSubmit }) => {
@@ -151,9 +152,10 @@ const AddEquipmentModal = ({ onClose, onSubmit }) => {
       <ModalContent onClick={e => e.stopPropagation()}>
         <Formik
           initialValues={{
-            equipmentName: '',
-            totalNo: '',
-            status: ''
+            name: '',
+            quantity: '',
+            status: '',
+            category: ''
           }}
           validationSchema={validationSchema}
           onSubmit={onSubmit}
@@ -163,27 +165,40 @@ const AddEquipmentModal = ({ onClose, onSubmit }) => {
               <InputGroup>
                 <Label>Equipment Name</Label>
                 <StyledInput
-                  name="equipmentName"
-                  value={values.equipmentName}
+                  name="name"
+                  value={values.name}
                   onChange={handleChange}
                   onBlur={handleBlur}
                 />
-                {touched.equipmentName && errors.equipmentName && (
-                  <ErrorMessage>{errors.equipmentName}</ErrorMessage>
+                {touched.name && errors.name && (
+                  <ErrorMessage>{errors.name}</ErrorMessage>
                 )}
               </InputGroup>
 
               <InputGroup>
-                <Label>Total no.</Label>
+                <Label>Quantity</Label>
                 <StyledInput
                   type="number"
-                  name="totalNo"
-                  value={values.totalNo}
+                  name="quantity"
+                  value={values.quantity}
                   onChange={handleChange}
                   onBlur={handleBlur}
                 />
-                {touched.totalNo && errors.totalNo && (
-                  <ErrorMessage>{errors.totalNo}</ErrorMessage>
+                {touched.quantity && errors.quantity && (
+                  <ErrorMessage>{errors.quantity}</ErrorMessage>
+                )}
+              </InputGroup>
+
+              <InputGroup>
+                <Label>Category</Label>
+                <StyledInput
+                  name="category"
+                  value={values.category}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                />
+                {touched.category && errors.category && (
+                  <ErrorMessage>{errors.category}</ErrorMessage>
                 )}
               </InputGroup>
 
@@ -196,8 +211,8 @@ const AddEquipmentModal = ({ onClose, onSubmit }) => {
                   onBlur={handleBlur}
                 >
                   <option value="">Select status</option>
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
+                  <option value="Available">Available</option>
+                  <option value="Not Available">Not Available</option>
                 </Select>
                 {touched.status && errors.status && (
                   <ErrorMessage>{errors.status}</ErrorMessage>

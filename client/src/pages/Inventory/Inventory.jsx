@@ -262,13 +262,29 @@ const Inventory = () => {
 
   const handleAddEquipment = async (values, { setSubmitting, resetForm }) => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('New equipment:', values);
+      console.log('Equipment values being sent:', values);
+
+      // Call the API to add equipment
+      const response = await axios.post('http://localhost:5000/api/equipment/', {
+        name: values.name,
+        quantity: values.quantity,
+        status: values.status,
+        category: values.category
+      }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('adminToken')}`, // Include token
+        },
+      });
+
+      // Add the new equipment to the state
+      setEquipments(prevEquipments => [...prevEquipments, response.data.equipment]);
+
       toast.success('Equipment added successfully!');
       resetForm();
       setShowAddModal(false);
     } catch (error) {
       toast.error('Failed to add equipment. Please try again.');
+      console.error('Error adding equipment:', error);
     } finally {
       setSubmitting(false);
     }
