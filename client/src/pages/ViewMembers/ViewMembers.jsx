@@ -200,6 +200,10 @@ const ViewMembers = () => {
     fetchMembers();
   }, []);
 
+  const filteredEquipments = members.filter(member =>
+    member.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
@@ -263,7 +267,7 @@ const ViewMembers = () => {
               </tr>
             </thead>
             <tbody>
-              {members.map(member => (
+              {filteredEquipments.map(member => (
                 <tr key={member.id}>
                   <Td>{member.name}</Td>
                   <Td>{member.id.slice(-12)}</Td>
