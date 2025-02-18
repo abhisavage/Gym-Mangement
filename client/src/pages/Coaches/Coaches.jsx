@@ -82,7 +82,6 @@ const Coaches = () => {
   const [error, setError] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [selectedTrainerId, setSelectedTrainerId] = useState(null);
 
   useEffect(() => {
     const fetchTrainers = async () => {
@@ -92,7 +91,7 @@ const Coaches = () => {
             Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
           },
         });
-        setTrainers(response.data); // Assuming the response data is an array of trainers
+        setTrainers(response.data);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -103,23 +102,13 @@ const Coaches = () => {
     fetchTrainers();
   }, []);
 
-  const fetchAvailableSessions = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/sessions/available`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
-        },
-      });
-      setSessions(response.data.sessions); // Assuming the response contains a "sessions" array
-    } catch (err) {
-      toast.error('Failed to fetch available sessions');
-    }
+  const handleSessionsClick = (trainer) => {
+    setSessions(trainer.sessions);
+    setShowModal(true);
   };
 
-  const handleSessionsClick = (trainerId) => {
-    fetchAvailableSessions();
-    setSelectedTrainerId(trainerId);
-    setShowModal(true);
+  const updateSessions = (sessionId) => {
+    setSessions((prevSessions) => prevSessions.filter(session => session.id !== sessionId));
   };
 
   if (loading) return <div>Loading...</div>;
@@ -160,10 +149,10 @@ const Coaches = () => {
               {trainers.map(trainer => (
                 <tr key={trainer.id}>
                   <Td>{trainer.name}</Td>
-                  <Td>{trainer.id.slice(-12)}</Td> {/* Display only the last 12 characters of trainer ID */}
+                  <Td>{trainer.id.slice(-12)}</Td>
                   <Td>{trainer.email}</Td>
                   <Td>
-                    <ActionButton onClick={() => handleSessionsClick(trainer.id)}>
+                    <ActionButton onClick={() => handleSessionsClick(trainer)}>
                       Sessions
                     </ActionButton>
                   </Td>
@@ -179,7 +168,11 @@ const Coaches = () => {
         </TableCard>
 
         {showModal && (
-          <SessionModal sessions={sessions} onClose={() => setShowModal(false)} />
+          <SessionModal 
+            sessions={sessions} 
+            onClose={() => setShowModal(false)} 
+            updateSessions={updateSessions}
+          />
         )}
 
         <ToastContainer position="top-right" autoClose={3000} />

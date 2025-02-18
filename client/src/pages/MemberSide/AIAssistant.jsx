@@ -106,7 +106,7 @@ const AIAssistant = () => {
   const handleExerciseSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:8000/recommend_exercise', {
+      const response = await fetch(`${AI_RECOMMENDER_URL}/recommend_exercise`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -141,7 +141,7 @@ const AIAssistant = () => {
   const handleDietSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:8000/recommend_diet', {
+      const response = await fetch(`${AI_RECOMMENDER_URL}/recommend_diet`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

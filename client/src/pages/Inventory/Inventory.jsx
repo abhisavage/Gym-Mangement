@@ -18,6 +18,7 @@ import {
   Input
 } from '../../styles/CommonStyles';
 import AddEquipmentModal from '../../components/Modals/AddEquipmentModal';
+import EditEquipmentModal from '../../components/Modals/EditEquipmentModal';
 import axios from 'axios';
 
 // Styled Components
@@ -165,7 +166,6 @@ const StatusBadge = styled.span`
   font-weight: 500;
   background: ${props => props.active ? 'rgba(46, 213, 115, 0.2)' : 'rgba(255, 71, 87, 0.2)'};
   color: ${props => props.active ? '#2ED573' : '#FF4757'};
-  border: 1px solid ${props => props.active ? 'rgba(46, 213, 115, 0.3)' : 'rgba(255, 71, 87, 0.3)'};
 `;
 
 const Pagination = styled.div`
@@ -223,6 +223,8 @@ const Inventory = () => {
   const [equipments, setEquipments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [currentEquipment, setCurrentEquipment] = useState(null);
 
   useEffect(() => {
     const fetchEquipments = async () => {
@@ -262,15 +264,59 @@ const Inventory = () => {
 
   const handleAddEquipment = async (values, { setSubmitting, resetForm }) => {
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('New equipment:', values);
+      console.log('Equipment values being sent:', values);
+
+      // Call the API to add equipment
+      const response = await axios.post('http://localhost:5000/api/equipment/', {
+        name: values.name,
+        quantity: values.quantity,
+        status: values.status,
+        category: values.category
+      }, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('adminToken')}`, // Include token
+        },
+      });
+
+      // Add the new equipment to the state
+      setEquipments(prevEquipments => [...prevEquipments, response.data.equipment]);
+
       toast.success('Equipment added successfully!');
       resetForm();
       setShowAddModal(false);
     } catch (error) {
       toast.error('Failed to add equipment. Please try again.');
+      console.error('Error adding equipment:', error);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleEditClick = (equipment) => {
+    setCurrentEquipment(equipment);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateEquipment = async (id, updatedValues) => {
+    try {
+      await axios.put(`http://localhost:5000/api/equipment/${id}`, updatedValues, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('adminToken')}`, // Include token
+        },
+      });
+
+      // Update the equipment in the state
+      setEquipments(prevEquipments => 
+        prevEquipments.map(equipment => 
+          equipment.id === id ? { ...equipment, ...updatedValues } : equipment
+        )
+      );
+
+      toast.success('Equipment updated successfully!');
+      setShowEditModal(false);
+    } catch (error) {
+      toast.error('Failed to update equipment. Please try again.');
+      console.error('Error updating equipment:', error);
     }
   };
 
@@ -327,7 +373,7 @@ const Inventory = () => {
             <thead>
               <tr>
                 <Th>Equipment Name</Th>
-                <Th>Total no.</Th>
+                <Th>Quantity</Th>
                 <Th>Status</Th>
                 <Th>Actions</Th>
               </tr>
@@ -338,12 +384,12 @@ const Inventory = () => {
                   <Td>{equipment.name}</Td>
                   <Td>{equipment.quantity}</Td>
                   <Td>
-                    <StatusBadge active={equipment.status === 'Active'}>
+                    <StatusBadge active={equipment.status === 'Available'}>
                       {equipment.status}
                     </StatusBadge>
                   </Td>
                   <Td>
-                    <EditButton>Edit</EditButton>
+                    <EditButton onClick={() => handleEditClick(equipment)}>Edit</EditButton>
                   </Td>
                 </tr>
               ))}
@@ -361,6 +407,14 @@ const Inventory = () => {
           <AddEquipmentModal
             onClose={() => setShowAddModal(false)}
             onSubmit={handleAddEquipment}
+          />
+        )}
+
+        {showEditModal && currentEquipment && (
+          <EditEquipmentModal
+            onClose={() => setShowEditModal(false)}
+            onSubmit={handleUpdateEquipment}
+            equipment={currentEquipment}
           />
         )}
 
