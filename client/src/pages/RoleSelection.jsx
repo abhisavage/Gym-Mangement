@@ -104,19 +104,19 @@ const RoleSelection = () => {
       
       <RolesContainer>
         <RoleCard onClick={() => handleRoleSelect('member')}>
-          <img src="/assets/sym1.png" alt="Member" />
+          <img src="/assets/user.png" alt="Member" />
           <h2>Member</h2>
           <p>Access your fitness programs, track progress, and manage your membership</p>
         </RoleCard>
 
         <RoleCard onClick={() => handleRoleSelect('trainer')}>
-          <img src="/assets/sym2.png" alt="Trainer" />
+          <img src="/assets/trainer1.png" alt="Trainer" />
           <h2>Trainer</h2>
           <p>Manage your clients, schedules, and training programs</p>
         </RoleCard>
 
         <RoleCard onClick={() => handleRoleSelect('admin')}>
-          <img src="/assets/sym3.png" alt="Admin" />
+          <img src="/assets/admin.png" alt="Admin" />
           <h2>Admin</h2>
           <p>Access system settings, manage users, and oversee operations</p>
         </RoleCard>

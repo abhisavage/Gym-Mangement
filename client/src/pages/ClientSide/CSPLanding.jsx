@@ -886,14 +886,14 @@ const CSPLanding = () => {
       <LocationSection id="visit">
         <LocationTitle>VISIT OUR GYM</LocationTitle>
         <LocationContent>
-          <MapContainer>
-            <iframe 
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3872.2383692254427!2d77.58812!3d12.93445!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae168b1c1c1c1d%3A0x0!2zUi4gVi4gQ29sbGVnZSBvZiBFbmdpbmVlcmluZywgTWlzYW5hIEdyYW5kIE1hbmFnZW1lbnQ!5e0!3m2!1sen!2sin!4v1629789876543!5m2!1sen!2sin"
-              allowFullScreen=""
-              loading="lazy"
-              title="Gym Location"
-            ></iframe>
-          </MapContainer>
+        <MapContainer>
+          <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3888.032144724611!2d77.498544!3d12.923849!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTLCsDU1JzI1LjkiTiA3N8KwMjknNTQuNyJF!5e0!3m2!1sen!2sin!4v1698765432100!5m2!1sen!2sin"
+            allowFullScreen=""
+            loading="lazy"
+            title="Gym Location"
+          ></iframe>
+        </MapContainer>
 
           <ContactInfo>
             <h3>VISIT OUR GYM</h3>
